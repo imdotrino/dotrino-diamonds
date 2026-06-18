@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b1220">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-title" content="Diamonds">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Diamonds — Juego casual de combinar diamantes</title>
+<meta name="description" content="Juego casual de combinar diamantes: mapa de mundos y niveles procedurales, dificultad creciente, diamantes duros y poderes especiales. Funciona sin conexión." />
+<link rel="canonical" href="https://diamonds.dotrino.com/" />
+<meta property="og:type" content="website" />
+<meta property="og:locale" content="es_ES" />
+<meta property="og:site_name" content="Dotrino" />
+<meta property="og:title" content="Diamonds" />
+<meta property="og:description" content="Combina diamantes por mundos y niveles procedurales: diamantes duros, poderes especiales y combos." />
+<meta property="og:url" content="https://diamonds.dotrino.com/" />
+<meta property="og:image" content="https://diamonds.dotrino.com/og.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Diamonds" />
+<meta name="twitter:description" content="Combina diamantes por mundos y niveles procedurales: diamantes duros, poderes especiales y combos." />
+<meta name="twitter:image" content="https://diamonds.dotrino.com/og.jpg" />
+<!-- Analítica cookieless autohosteada (GoatCounter); no cuenta en localhost/LAN. -->
+<script>window.goatcounter={path:function(p){return location.hostname+p}}</script>
+<script data-goatcounter="https://goat.dotrino.com/count" async src="https://goat.dotrino.com/count.js"></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Diamonds",
+  "url": "https://diamonds.dotrino.com/",
+  "description": "Juego casual de combinar diamantes con mapa de mundos y niveles procedurales, diamantes duros y poderes especiales.",
+  "applicationCategory": "GameApplication",
+  "operatingSystem": "Web",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "publisher": { "@type": "Organization", "name": "Dotrino", "url": "https://dotrino.com/" }
+}
+</script>
+</head>
+<body>
+
+  <div class="topbar">
+    <dotrino-back style="color:#e2e8f0;--cc-back-size:36px;margin-left:2px"></dotrino-back>
+    <div class="brand">
+      <img src="icon.svg" alt="" width="30" height="30">
+      <span>Diamonds</span>
+    </div>
+    <button id="btnMapaTop" style="display:none">← Mapa</button>
+    <button id="btnIdioma" title="ES / EN">ES</button>
+    <dotrino-install class="cc-install"></dotrino-install>
+    <dotrino-support class="topbar-coin" href="https://ko-fi.com/dotrino" repo="dotrino/diamonds" discord="https://discord.gg/D648uq7cth"></dotrino-support>
+  </div>
+
+  <!-- ============ VISTA MAPA ============ -->
+  <div class="vista activa" id="vistaMapa">
+    <div class="mapa-vp" id="mapaVp">
+      <div id="mapaMundo">
+        <svg id="mapaSvg"></svg>
+      </div>
+    </div>
+    <div class="mapa-hud" id="mapaHud"></div>
+    <div class="mapa-hint" id="mapaHint">Arrastra para explorar el mapa</div>
+    <button class="mapa-recenter" id="mapaRecenter">◎ Nivel actual</button>
+    <button class="mapa-libro" id="btnGlosario" aria-label="Guía">📖<span id="libroTxt">Guía</span></button>
+  </div>
+
+  <!-- ============ VISTA JUEGO ============ -->
+  <div class="vista" id="vistaJuego">
+    <div class="scores">
+      <div class="score">
+        <div class="lbl" id="lblNivel">Nivel</div>
+        <div class="val" id="hudNivel">1·1</div>
+      </div>
+      <div class="score obj">
+        <div class="lbl" id="objLbl">Objetivo</div>
+        <div class="val" id="objVal">—</div>
+      </div>
+      <div class="score">
+        <div class="lbl" id="lblMov">Mov.</div>
+        <div class="val" id="moves">30</div>
+      </div>
+      <div class="score">
+        <div class="lbl" id="lblPuntos">Puntos</div>
+        <div class="val" id="score">0</div>
+      </div>
+    </div>
+
+    <div class="board-wrap">
+      <canvas id="board"></canvas>
+    </div>
+
+    <div class="control">
+      <button id="btnMapa2">← Mapa</button>
+    </div>
+  </div>
+
+  <!-- ============ GLOSARIO ============ -->
+  <div class="modal glos" id="modalGlosario">
+    <div class="glos-caja">
+      <div class="glos-head">
+        <h2 id="glosTitulo">Guía del juego</h2>
+        <button class="glos-cerrar" id="btnGlosCerrar">✕</button>
+      </div>
+      <div class="glos-body" id="glosBody"></div>
+    </div>
+  </div>
+
+  <div class="combo" id="combo"></div>
+
+  <div class="modal" id="modalFin">
+    <div class="modal-caja">
+      <h2 id="finTitulo">¡Nivel superado!</h2>
+      <div class="estrellas" id="finEstrellas"></div>
+      <p id="finMsg"></p>
+      <div class="modal-botones">
+        <button id="btnSiguiente">Siguiente nivel</button>
+        <button id="btnReintentar">Reintentar</button>
+        <button class="sec" id="btnCompartir">Compartir</button>
+        <button class="sec" id="btnEndless">∞ Seguir sin límite</button>
+        <button class="sec" id="btnMapaModal">Ir al mapa</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@dotrino/support@0.3/src/index.js"></script>
+</body>
+</html>
