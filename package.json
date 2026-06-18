@@ -11,12 +11,12 @@
     "test": "playwright test"
   },
   "dependencies": {
-    "@dotrino/identity": "0.9.1",
+    "@dotrino/identity": "0.10.0",
     "@dotrino/install": "0.1.1",
-    "@dotrino/nav": "0.2.0",
+    "@dotrino/nav": "0.2.1",
     "@dotrino/notifications": "0.3.0",
-    "@dotrino/proxy-client": "^0.6.0",
-    "@dotrino/store": "^0.3.0"
+    "@dotrino/proxy-client": "0.6.3",
+    "@dotrino/store": "0.4.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
