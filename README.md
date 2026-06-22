@@ -1,5 +1,7 @@
 # Diamonds
 
+> **Parte del ecosistema [Dotrino](https://dotrino.com).** Misión: aplicaciones que resuelven problemas comunes, respetando tu privacidad — sin anuncios, sin cookies, sin rastreo de datos, sin vender tu identidad a nadie.
+
 Juego casual de **combinar diamantes** (match-3): intercambia gemas adyacentes
 para alinear **3 o más** del mismo color, encadena **combos en cascada** y supera
 tu **récord**. Avisos sonoros, vibración y funcionamiento **sin conexión** (PWA
