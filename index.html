@@ -46,17 +46,20 @@
 </head>
 <body>
 
-  <div class="topbar">
-    <dotrino-back style="color:#e2e8f0;--cc-back-size:36px;margin-left:2px"></dotrino-back>
-    <div class="brand">
-      <img src="icon.svg" alt="" width="30" height="30">
-      <span>Diamonds</span>
-    </div>
-    <button id="btnMapaTop" style="display:none">← Mapa</button>
-    <button id="btnIdioma" title="ES / EN">ES</button>
-    <dotrino-install class="cc-install"></dotrino-install>
-    <dotrino-support class="topbar-coin" href="https://ko-fi.com/dotrino" repo="imdotrino/dotrino-diamonds" discord="https://discord.gg/D648uq7cth"></dotrino-support>
-  </div>
+  <!-- Barra superior ESTÁNDAR del ecosistema (§5): marca + volver + idioma +
+       perfil (§6.1) + moneda de support, todo en un componente. La app solo pasa
+       lo suyo por slot: la acción "← Mapa" y el botón de instalar. -->
+  <dotrino-topbar
+    brand="Diamonds"
+    icon="icon.svg"
+    brand-href="./"
+    profile
+    support-href="https://ko-fi.com/dotrino"
+    support-repo="imdotrino/dotrino-diamonds"
+    support-discord="https://discord.gg/D648uq7cth">
+    <button id="btnMapaTop" class="topbar-accion" style="display:none">← Mapa</button>
+    <dotrino-install slot="end" class="cc-install"></dotrino-install>
+  </dotrino-topbar>
 
   <!-- ============ VISTA MAPA ============ -->
   <div class="vista activa" id="vistaMapa">
@@ -130,6 +133,5 @@
   </div>
 
   <script type="module" src="/src/main.js"></script>
-  <script type="module" src="https://cdn.jsdelivr.net/npm/@dotrino/support@0.3/src/index.js"></script>
 </body>
 </html>

@@ -3,11 +3,18 @@
 // el Service Worker y cablea la navegación "volver" unificada del ecosistema.
 import './main.css';
 
+// OJO con el orden: i18n va ANTES del topbar. Su módulo migra la preferencia de
+// idioma vieja a la clave del ecosistema ('dotrino.lang'), que es la que lee el
+// topbar al registrarse; al revés, el idioma elegido se perdería.
+import './i18n.js';
+// Barra superior estándar del ecosistema (§5): marca + volver + idioma + perfil
+// (§6.1) + moneda de support en UN componente. No se re-arma el header a mano.
+import '@dotrino/topbar';
 // Botón "Instalar App" (PWA) unificado: solo importar registra <dotrino-install>.
 import '@dotrino/install';
-// Navegación "volver" unificada: registra <dotrino-back> + captura el botón
-// físico de Android / gesto de iOS / atrás del navegador.
-import { createBackNav } from '@dotrino/nav';
+// Navegación "volver" unificada: captura el botón físico de Android / gesto de
+// iOS / atrás del navegador. El chevron y el controlador los instala el topbar.
+import { createBackNav, getBackNav } from '@dotrino/nav';
 
 import { $ } from './dom.js';
 import { S } from './state.js';
@@ -18,7 +25,7 @@ import { registerInput } from './input.js';
 import { medir } from './render.js';
 import { mostrarVista, renderMapa, irAlMapa } from './ui/map.js';
 import { abrirGlosario } from './ui/glossary.js';
-import { toggleIdioma } from './ui/hud.js';
+import { initTopbar, setShareUrl } from './ui/topbar.js';
 import { iniciarNivel, entrarEndless, compartirNivel } from './levels.js';
 import { syncProgressFromStore } from './progress.js';
 import { handleInviteHash, startReferrals, onReferralsChange, inviteLink } from './referrals.js';
@@ -31,11 +38,15 @@ S.def = defNivel(1);
 
 registerInput();
 
+/* ===================== Topbar ===================== */
+// Identidad + reputación al topbar (botón y modal "Mi perfil", §6.1) y el
+// idioma pasa a mandarlo él (evento 'dotrino-lang').
+initTopbar();
+
 /* ===================== Eventos UI ===================== */
 $('btnMapaTop').addEventListener('click', irAlMapa);
 $('btnMapa2').addEventListener('click', irAlMapa);
 $('btnGlosario').addEventListener('click', abrirGlosario);
-$('btnIdioma').addEventListener('click', toggleIdioma);
 $('btnGlosCerrar').addEventListener('click', () => $('modalGlosario').classList.remove('abierto'));
 $('modalGlosario').addEventListener('click', e => { if (e.target === $('modalGlosario')) $('modalGlosario').classList.remove('abierto'); });
 $('btnMapaModal').addEventListener('click', irAlMapa);
@@ -68,16 +79,14 @@ syncProgressFromStore().then(ch => { if (ch && S.vista === 'mapa') renderMapa();
 // share de la moneda de support una vez que hay identidad.
 onReferralsChange(() => { if (S.vista === 'mapa') renderMapa(); });
 startReferrals().catch(() => {});
-inviteLink().then(link => {
-  if (!link) return;
-  const sup = document.querySelector('dotrino-support');
-  if (sup) sup.setAttribute('share-url', link);
-}).catch(() => {});
+inviteLink().then(link => { if (link) setShareUrl(link); }).catch(() => {});
 
 /* ===================== Navegación "volver" ===================== */
 // chevron del header + botón físico de Android / gesto iOS / atrás del navegador →
 // cierra modal, vuelve del juego al mapa; si no hay nada → dotrino.com.
-const nav = createBackNav();
+// El topbar ya instaló el controlador al registrarse (con el mismo `home` por
+// defecto): reusamos ESE. Crear otro dejaría dos trampas de popstate compitiendo.
+const nav = getBackNav() || createBackNav();
 // Capa por modal (se abren/cierran con la clase `abierto`).
 const bindModal = (id) => {
   const el = document.getElementById(id); if (!el) return;

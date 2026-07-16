@@ -1,29 +1,30 @@
-/* --- Barra superior --- */
-.topbar {
+/* --- Barra superior: <dotrino-topbar> (§5) ---
+   El header ya no se arma a mano: el componente compartido trae marca, volver,
+   idioma, perfil y moneda de support. Aquí solo lo TEMATIZAMOS con los colores de
+   Diamonds y estilamos lo que la app pasa por slot (vive en el light DOM). */
+dotrino-topbar {
+  /* El layout es una columna flex (body): la barra no crece ni se encoge.
+     No es sticky — nunca lo fue: el contenido scrollea dentro de las vistas. */
   flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  background: rgba(11,18,32,.6);
-  border-bottom: 1px solid rgba(148,163,184,.12);
-  padding-top: env(safe-area-inset-top);
+  --dotrino-topbar-bg: rgba(11, 18, 32, .6);
+  --dotrino-topbar-border: rgba(148, 163, 184, .12);
+  --dotrino-topbar-text: #e2e8f0;
+  --dotrino-topbar-muted: #94a3b8;
+  --dotrino-topbar-accent: #22d3ee;
+  --dotrino-topbar-accent-text: #06283d;
 }
-.brand {
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 0 12px;
-  min-width: 0;
-}
-.brand img { width: clamp(26px, 4vh, 34px); height: clamp(26px, 4vh, 34px); display: block; }
-.brand span {
+/* La marca conserva el degradado cian del juego. */
+dotrino-topbar::part(brand-name) {
   font-weight: 800;
   letter-spacing: .04em;
   font-size: clamp(15px, 2.3vh, 20px);
   background: linear-gradient(90deg, #a5f3fc, #22d3ee);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.topbar button {
+dotrino-topbar::part(brand-icon) { border-radius: 0; }
+
+/* Acción propia del juego ("← Mapa"), pasada por el slot del medio. */
+.topbar-accion {
   border: none;
   background: transparent;
   color: #94a3b8;
@@ -34,7 +35,8 @@
   letter-spacing: .05em;
   cursor: pointer;
 }
-.topbar button:active { color: #e2e8f0; }
-.topbar-coin { flex: 0 0 auto; display: flex; align-items: center; padding: 0 10px; }
+.topbar-accion:active { color: #e2e8f0; }
+
+/* Botón de instalar (slot "end"): vive en el light DOM → lo estila la app. */
 .cc-install{ --cc-install-color:#e2e8f0; --cc-install-icon:16px; --cc-install-radius:10px; --cc-install-gap:6px; --cc-install-font-size:.85rem; }
 .cc-install::part(button){ height:34px; padding:0 12px; border:1px solid rgba(226,232,240,.35); }

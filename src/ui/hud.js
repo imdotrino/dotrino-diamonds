@@ -2,7 +2,7 @@
 // Verbatim del juego original.
 import { $ } from '../dom.js';
 import { S } from '../state.js';
-import { tr, getLang, setLang } from '../i18n.js';
+import { tr, getLang } from '../i18n.js';
 import { renderMapa } from './map.js';
 
 export function actualizarHUD () {
@@ -24,7 +24,6 @@ export function mostrarCombo (n) {
 export function aplicarIdioma () {
   const LANG = getLang();
   document.documentElement.lang = LANG;
-  $('btnIdioma').textContent = LANG === 'es' ? 'EN' : 'ES';
   $('btnMapaTop').textContent = tr('mapa');
   $('btnMapa2').textContent = tr('mapa');
   $('mapaRecenter').textContent = tr('nivelActual');
@@ -42,9 +41,4 @@ export function aplicarIdioma () {
   S.glosListo = false;                 // forzar reconstrucción del glosario
   if (S.def) actualizarHUD();
   if (S.vista === 'mapa') { try { renderMapa(); } catch (e) {} }
-}
-
-export function toggleIdioma () {
-  setLang(getLang() === 'es' ? 'en' : 'es');
-  aplicarIdioma();
 }

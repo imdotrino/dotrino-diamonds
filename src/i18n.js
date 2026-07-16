@@ -1,10 +1,28 @@
 // i18n (es / en). Mismas cadenas y lógica que el juego original; el `tr()` cae a
 // español si falta una clave. `aplicarIdioma()` (que toca el DOM y re-renderiza)
 // vive en ui/hud.js para no acoplar este módulo a la UI.
-export const LANG_KEY = 'diamonds_lang';
+// El idioma lo manda <dotrino-topbar>, que lo persiste en 'dotrino.lang' (clave
+// común del ecosistema). Leemos ESA clave para resolver igual que él en el primer
+// render; los cambios llegan por el evento 'dotrino-lang' (ver main.js).
+export const LANG_KEY = 'dotrino.lang';
+const LANG_KEY_VIEJA = 'diamonds_lang';
+
+// Migración única de la preferencia propia a la clave del ecosistema: si no lo
+// hiciéramos, a quien ya había elegido idioma se le resetearía al del navegador.
+// Debe correr ANTES de que el topbar se registre (main.js importa i18n primero).
+(() => {
+  try {
+    const viejo = localStorage.getItem(LANG_KEY_VIEJA);
+    if ((viejo === 'es' || viejo === 'en') && !localStorage.getItem(LANG_KEY)) {
+      localStorage.setItem(LANG_KEY, viejo);
+    }
+    if (viejo != null) localStorage.removeItem(LANG_KEY_VIEJA);
+  } catch (e) {}
+})();
 
 let LANG = (() => {
-  const s = localStorage.getItem(LANG_KEY);
+  let s = null;
+  try { s = localStorage.getItem(LANG_KEY); } catch (e) {}
   if (s === 'es' || s === 'en') return s;
   return (navigator.language || 'es').toLowerCase().startsWith('en') ? 'en' : 'es';
 })();
@@ -97,4 +115,6 @@ export const STR = {
 
 export const tr = k => { const v = (STR[LANG] || STR.es)[k]; return v != null ? v : (STR.es[k] != null ? STR.es[k] : k); };
 export const getLang = () => LANG;
-export function setLang (l) { LANG = l; localStorage.setItem(LANG_KEY, LANG); }
+// El topbar ya persiste en 'dotrino.lang' al cambiar; aquí solo sincronizamos el
+// valor en memoria (y lo dejamos escrito por si el evento llegara de otra fuente).
+export function setLang (l) { LANG = l; try { localStorage.setItem(LANG_KEY, LANG); } catch (e) {} }
