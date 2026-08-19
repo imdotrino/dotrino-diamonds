@@ -3,12 +3,13 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Diamonds — juego casual de combinar diamantes del ecosistema Dotrino (Vite, sin framework). Mapa de mundos y niveles procedurales, diamantes duros y poderes especiales. Funciona sin conexión.",
+  "description": "Diamonds \u2014 juego casual de combinar diamantes del ecosistema Dotrino (Vite, sin framework). Mapa de mundos y niveles procedurales, diamantes duros y poderes especiales. Funciona sin conexi\u00f3n.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "playwright test"
+    "test": "playwright test",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@dotrino/identity": "0.33.0",
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "typescript": "5.9.3"
   }
 }
