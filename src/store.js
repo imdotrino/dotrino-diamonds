@@ -21,7 +21,13 @@ async function getBackend () {
   backendPromise = (async () => {
     try {
       const mod = await import('@dotrino/store');
-      const store = await mod.Store.connect();
+      const { getIdentity } = await import('./identity.js');
+      const identity = await getIdentity();
+      // Atado al PERFIL (respaldo en la bóveda, sin mezclar cuentas). Hasta 2026-09-30 conectaba
+      // sin identidad y todo quedaba en el espacio común del navegador; `adoptCommon` lo trae al
+      // perfil una vez, sin borrar el original.
+      if (!identity) throw Object.assign(new Error('identity not available'), { code: 'no-identity' });
+      const store = await mod.Store.connect({ identity, adoptCommon: ['diamonds.'] });
       if (store && typeof store.appendMessage === 'function' && typeof store.listThread === 'function') {
         return { kind: 'store',
           appendMessage: (t, e) => store.appendMessage(t, e),
@@ -58,3 +64,10 @@ export async function saveDoc (thread, doc) {
 export const PROGRESS_THREAD = 'diamonds.progress';
 export const REFERRALS_THREAD = 'diamonds.referrals';   // pubkeys que abrieron MI link (invitador)
 export const CONSUMED_THREAD = 'diamonds.consumed';     // pubkeys de links que YO abrí (consumidor)
+
+/** El almacén del ecosistema ya atado al perfil, para el punto del respaldo del topbar (null si no abrió). */
+export async function storeHandle () {
+  const b = await getBackend();
+  if (b.kind !== 'store') return null;
+  return (await import('@dotrino/store')).Store.current();
+}

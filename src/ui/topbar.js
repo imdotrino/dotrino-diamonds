@@ -44,6 +44,8 @@ export function initTopbar () {
   getIdentity().then(async (id) => {
     if (!id) return;                    // sin vault: el botón no abre nada
     tb.identity = id;
+    // El estado del respaldo en la bóveda, en el botón de perfil (topbar ≥ 0.13).
+    import('../store.js').then(m => m.storeHandle()).then(s => { if (s) tb.store = s; }).catch(() => {});
     tb.reputation = await getReputation();
   }).catch(() => {});
 }
