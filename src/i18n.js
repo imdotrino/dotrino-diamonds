@@ -29,6 +29,7 @@ let LANG = (() => {
 
 export const STR = {
   es: {
+    storeProblem: 'No se pudo abrir tu almacén: esta partida no se guardará.',
     mapa: '← Mapa', nivelActual: '◎ Nivel actual', guia: 'Guía',
     hint: 'Arrastra para explorar el mapa', portal: 'Portal',
     guiaTitulo: 'Guía del juego',
@@ -71,6 +72,7 @@ export const STR = {
     gC7T: 'Estrella + Estrella', gC7D: '¡Arrasa todo el tablero!',
   },
   en: {
+    storeProblem: 'Could not open your storage: this game will not be saved.',
     mapa: '← Map', nivelActual: '◎ Current level', guia: 'Guide',
     hint: 'Drag to explore the map', portal: 'Portal',
     guiaTitulo: 'Game guide',

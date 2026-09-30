@@ -112,3 +112,9 @@ if (vj) {
   new MutationObserver(syncV).observe(vj, { attributes: true, attributeFilter: ['class'] });
   syncV();
 }
+
+// Si el almacén no abre, la partida sigue pero NO se guarda: se dice (store.js, sin repliegue).
+import('./store.js').then(({ onStoreProblem }) => onStoreProblem(async () => {
+  const [{ toast }, { tr }] = await Promise.all([import('./levels.js'), import('./i18n.js')]);
+  toast('⚠ ' + tr('storeProblem'), 8000);
+}));

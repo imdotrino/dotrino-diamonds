@@ -49,7 +49,7 @@ export async function entrarEndless () {
   S.estado = 'idle';
 }
 
-export function toast (txt) {
+export function toast (txt, ms = 1800) {
   let t = $('toast');
   if (!t) {
     t = document.createElement('div');
@@ -60,7 +60,7 @@ export function toast (txt) {
   t.textContent = txt;
   t.style.opacity = '1';
   clearTimeout(toast._t);
-  toast._t = setTimeout(() => { t.style.opacity = '0'; }, 1800);
+  toast._t = setTimeout(() => { t.style.opacity = '0'; }, ms);
 }
 
 export async function compartirNivel () {
