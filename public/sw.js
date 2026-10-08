@@ -1,4 +1,6 @@
-const CACHE = 'diamonds-v19';
+const CACHE = 'diamonds-v20';
+// El timbre de Web Push del pilar (@dotrino/proxy-client): sin esto el push no despierta a nadie.
+importScripts('./dotrino-push-sw.js');
 const ASSETS = [
   './',
   './index.html',
