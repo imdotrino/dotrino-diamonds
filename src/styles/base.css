@@ -2,10 +2,13 @@
 html, body {
   height: 100%;
   overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--dt-font);
   user-select: none;
   -webkit-user-select: none;
 }
+/* El juego (mapa, tablero, HUD, modales) es un arcade oscuro y sus colores son suyos;
+   la barra superior sigue al tema del ecosistema (@dotrino/theme, §5), claro u oscuro. */
+body > :not(dotrino-topbar) { color-scheme: dark; }
 body {
   display: flex;
   flex-direction: column;

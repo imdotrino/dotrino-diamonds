@@ -1,6 +1,7 @@
 // Punto de entrada de Diamonds (Vite). Inicializa el estado (canvas, progreso,
 // nivel), engancha la interacción y los listeners de UI, arranca el loop, registra
 // el Service Worker y cablea la navegación "volver" unificada del ecosistema.
+import '@dotrino/theme/theme.css'
 import './main.css';
 
 // OJO con el orden: i18n va ANTES del topbar. Su módulo migra la preferencia de
