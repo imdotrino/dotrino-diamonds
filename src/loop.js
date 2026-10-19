@@ -1,8 +1,8 @@
 // Loop principal: avanza tweens, actualiza FX y dibuja el tablero (solo en la
 // vista de juego). Verbatim del juego original.
 import { S } from './state.js';
-import { actualizarFx } from './fx.js';
-import { dibujar } from './render.js';
+import { updateFx } from './fx.js';
+import { draw } from './render.js';
 
 export function loop (ts) {
   const dt = S.lastTs ? (ts - S.lastTs) : 16;
@@ -14,7 +14,7 @@ export function loop (ts) {
     for (const p in tw.props) tw.obj[p] = tw.from[p] + (tw.props[p] - tw.from[p]) * e;
     if (k >= 1) { S.tweens.splice(i, 1); tw.done(); }
   }
-  actualizarFx(dt);
-  if (S.vista === 'juego') dibujar();
+  updateFx(dt);
+  if (S.view === 'game') draw();
   requestAnimationFrame(loop);
 }

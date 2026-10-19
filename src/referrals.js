@@ -1,9 +1,9 @@
 // Referidos con recompensa (mecánica "por diversión", sin anti-trampa: es
 // autohosteado y los puntos viven en el store del propio usuario).
 //
-// - Compartís tu enlace de invitación `#i=<pack(tu pubkey)>`.
+// - Compartes tu enlace de invitación `#i=<pack(tu pubkey)>`.
 // - Quien lo abre te manda un acuse `kind:'referral'` por la cola del proxy.
-// - Vos acumulás las pubkeys ÚNICAS de quienes abrieron (dedup por contacto) en
+// - Acumulas las pubkeys ÚNICAS de quienes abrieron (dedup por contacto) en
 //   el store; cada referido te suma estrellas-bonus que desbloquean mundos antes.
 //
 // Reusa el motor común @dotrino/notifications (createShareReceipts
@@ -22,8 +22,8 @@ const LS_REPORTED = 'diamonds_invited_by'; // (legacy) invitadores ya reportados
 // Recompensa en estrellas-bonus (cuentan para desbloquear mundos):
 //  - invitar (que abran tu link) premia más, porque difunde el juego.
 //  - consumir (abrir el link de otro) también premia, pero un poco menos.
-export const ESTRELLAS_POR_REFERIDO = 3;
-export const ESTRELLAS_POR_CONSUMIDO = 1;
+export const STARS_PER_REFERRAL = 3;
+export const STARS_PER_CONSUMED = 1;
 
 let _set = new Set();        // referidos (invitador)
 let _consumed = new Set();   // links consumidos (consumidor)
@@ -32,11 +32,11 @@ let _receipts = null;
 
 export function referralCount () { return _set.size; }
 export function consumedCount () { return _consumed.size; }
-export function referralBonusStars () { return _set.size * ESTRELLAS_POR_REFERIDO; }
-export function consumedBonusStars () { return _consumed.size * ESTRELLAS_POR_CONSUMIDO; }
+export function referralBonusStars () { return _set.size * STARS_PER_REFERRAL; }
+export function consumedBonusStars () { return _consumed.size * STARS_PER_CONSUMED; }
 export function onReferralsChange (fn) { _onChange = fn || (() => {}); }
 
-function emit () { try { _onChange({ referidos: _set.size, consumidos: _consumed.size }); } catch {} }
+function emit () { try { _onChange({ referrals: _set.size, consumed: _consumed.size }); } catch {} }
 
 function loadLocal () {
   try { const a = JSON.parse(localStorage.getItem(LS_REF)); if (Array.isArray(a)) _set = new Set(a); } catch {}

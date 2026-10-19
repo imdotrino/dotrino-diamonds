@@ -5,7 +5,7 @@
 import { getIdentity } from '../identity.js';
 import { getReputation } from '../reputation.js';
 import { setLang } from '../i18n.js';
-import { aplicarIdioma } from './hud.js';
+import { applyLang } from './hud.js';
 
 export const topbar = () => document.querySelector('dotrino-topbar');
 
@@ -23,7 +23,7 @@ export function initTopbar () {
     const l = e.detail && e.detail.lang;
     if (l !== 'es' && l !== 'en') return;
     setLang(l);
-    aplicarIdioma();
+    applyLang();
     // <dotrino-install> vive en el light DOM: el lang se le pasa a mano.
     tb.querySelector('dotrino-install')?.setAttribute('lang', l);
   });
@@ -46,7 +46,7 @@ export function initTopbar () {
 export function setShareUrl (link) {
   const tb = topbar();
   if (!tb || !tb.shadowRoot || !link) return;
-  const aplicar = () => tb.shadowRoot.querySelector('dotrino-support')?.setAttribute('share-url', link);
-  aplicar();
-  new MutationObserver(aplicar).observe(tb.shadowRoot, { childList: true });
+  const apply = () => tb.shadowRoot.querySelector('dotrino-support')?.setAttribute('share-url', link);
+  apply();
+  new MutationObserver(apply).observe(tb.shadowRoot, { childList: true });
 }

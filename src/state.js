@@ -7,12 +7,12 @@ import { N } from './config.js';
 export const S = {
   cell: 48, dpr: 1,
   grid: [],
-  estado: 'idle',         // 'idle' | 'busy'
+  status: 'idle',         // 'idle' | 'busy'
   sel: null,
-  score: 0, movs: 0, objRestante: 0,
+  score: 0, moves: 0, targetsLeft: 0,
   endless: false,         // modo libre: sin límite de movimientos
-  def: null,              // defNivel(n) actual
-  vista: 'mapa',
+  def: null,              // levelDef(n) actual
+  view: 'map',
   tweens: [],
   fx: [],                 // partículas / haces / ondas (efectos visuales)
   nowMs: 0,               // reloj para pulsos (palpitar)
@@ -20,13 +20,13 @@ export const S = {
   lastTs: 0,
   prog: null,             // progreso { max, stars }
   cv: null, ctx: null,    // canvas + contexto 2d
-  finShare: null,
-  glosListo: false,
+  endShare: null,
+  glossaryReady: false,
   // mapa
   mapOff: { x: 0, y: 0 },
   mapDim: { w: 0, h: 0, vw: 0, vh: 0 },
   mapStops: [],
-  mapActualXY: null,
+  mapCurrentXY: null,
   mapPanInit: false,
   panStart: null, panBase: null, panMoved: false,
   downCell: null,
@@ -37,4 +37,4 @@ export const I = (r, c) => r * N + c;
 export const at = i => S.grid[(i / N) | 0][i % N];
 
 // Fábrica de gemas.
-export function gem (r, c, t) { return { tipo: t, hp: 1, hpMax: 1, power: null, objetivo: false, objColor: null, dr: r, dc: c, scale: 1, charge: 0 }; }
+export function gem (r, c, t) { return { type: t, hp: 1, hpMax: 1, power: null, isTarget: false, targetColor: null, dr: r, dc: c, scale: 1, charge: 0 }; }

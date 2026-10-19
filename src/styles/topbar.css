@@ -15,7 +15,7 @@ dotrino-topbar::part(brand-name) {
 dotrino-topbar::part(brand-icon) { border-radius: 0; }
 
 /* Acción propia del juego ("← Mapa"), pasada por el slot del medio. */
-.topbar-accion {
+.topbar-action {
   border: none;
   background: transparent;
   color: var(--dt-text-dim);
@@ -26,7 +26,7 @@ dotrino-topbar::part(brand-icon) { border-radius: 0; }
   letter-spacing: .05em;
   cursor: pointer;
 }
-.topbar-accion:active { color: var(--dt-text); }
+.topbar-action:active { color: var(--dt-text); }
 
 /* Botón de instalar (slot "end"): vive en el light DOM → lo estila la app. */
 .cc-install{ --cc-install-color:var(--dt-text); --cc-install-icon:16px; --cc-install-radius:10px; --cc-install-gap:6px; --cc-install-font-size:.85rem; }

@@ -2,16 +2,16 @@
 // localStorage es la cache rápida y sincrónica del juego; el store.dotrino.com es
 // el respaldo durable (§4). Las estrellas-bonus por referidos cuentan para el
 // desbloqueo (ver referrals.js).
-import { PROG_KEY, reqNivel } from './config.js';
+import { PROG_KEY, reqLevel } from './config.js';
 import { S } from './state.js';
 import { loadDoc, saveDoc, PROGRESS_THREAD } from './store.js';
 import { referralBonusStars, consumedBonusStars } from './referrals.js';
 
-export function cargarProg () {
+export function loadProgress () {
   try { const d = JSON.parse(localStorage.getItem(PROG_KEY)); if (d && d.stars) return { max: d.max || 1, stars: d.stars || {} }; } catch {}
   return { max: 1, stars: {} };
 }
-export function guardarProg () {
+export function saveProgress () {
   try { localStorage.setItem(PROG_KEY, JSON.stringify(S.prog)); } catch {}
   saveDoc(PROGRESS_THREAD, S.prog).catch(() => {});   // respaldo durable best-effort
 }
@@ -33,10 +33,10 @@ export async function syncProgressFromStore () {
 }
 
 // Estrellas totales = mejores por nivel + bonus por referidos (que abren tu link)
-// + bonus por links consumidos (los que vos abriste de otros).
-export function estrellasTotales () {
+// + bonus por links consumidos (los que tú abriste de otros).
+export function totalStars () {
   let s = 0; for (const k in S.prog.stars) s += S.prog.stars[k] || 0;
   return s + referralBonusStars() + consumedBonusStars();
 }
 // Un nivel es jugable si llegó la progresión y se reúnen las estrellas.
-export function desbloqueado (n) { return n <= S.prog.max && estrellasTotales() >= reqNivel(n); }
+export function isUnlocked (n) { return n <= S.prog.max && totalStars() >= reqLevel(n); }

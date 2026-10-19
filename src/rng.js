@@ -1,6 +1,6 @@
 // RNG determinista (mulberry32) y definición determinista de cada nivel: el nivel
 // n siempre se genera igual. Verbatim del juego original.
-import { features, mundoDeNivel, nivelEnMundo, infoMundo } from './config.js';
+import { features, worldOfLevel, levelInWorld, worldInfo } from './config.js';
 
 export function mulberry32 (a) {
   return function () {
@@ -12,20 +12,20 @@ export function mulberry32 (a) {
 }
 
 // Definición determinista del nivel n (1-based global).
-export function defNivel (n) {
-  const w = mundoDeNivel(n), em = nivelEnMundo(n);
+export function levelDef (n) {
+  const w = worldOfLevel(n), em = levelInWorld(n);
   const f = features(w);
   const rng = mulberry32((Math.imul(n, 2654435761) ^ 0x9e3779b9) >>> 0);
-  const tipo = (f.duros && em % 2 === 0) ? 'romper' : 'puntos';
-  const movs = Math.max(14, 30 - (w - 1) * 2 - Math.floor((em - 1) / 2));
-  let duros = 0;
-  if (f.duros) {
-    duros = tipo === 'romper' ? (3 + w + Math.floor(em / 2)) : Math.floor(rng() * 3);
-    duros = Math.min(duros, 18);
+  const type = (f.hard && em % 2 === 0) ? 'break' : 'points';
+  const moves = Math.max(14, 30 - (w - 1) * 2 - Math.floor((em - 1) / 2));
+  let hard = 0;
+  if (f.hard) {
+    hard = type === 'break' ? (3 + w + Math.floor(em / 2)) : Math.floor(rng() * 3);
+    hard = Math.min(hard, 18);
   }
-  const objetivoPuntos = tipo === 'puntos'
+  const targetPoints = type === 'points'
     ? Math.round((600 + w * 320 + em * 200) / 10) * 10
     : 0;
-  return { n, w, em, tipo, movs, colores: f.colores, duros, reforzados: f.reforzados,
-           objetivoPuntos, rng, info: infoMundo(w) };
+  return { n, w, em, type, moves, colors: f.colors, hard, reinforced: f.reinforced,
+           targetPoints, rng, info: worldInfo(w) };
 }

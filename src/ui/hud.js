@@ -3,42 +3,42 @@
 import { $ } from '../dom.js';
 import { S } from '../state.js';
 import { tr, getLang } from '../i18n.js';
-import { renderMapa } from './map.js';
+import { renderMap } from './map.js';
 
-export function actualizarHUD () {
+export function updateHUD () {
   const def = S.def;
-  $('hudNivel').textContent = def.w + '·' + def.em;
-  $('moves').textContent = Math.max(0, S.movs);
+  $('hudLevel').textContent = def.w + '·' + def.em;
+  $('moves').textContent = Math.max(0, S.moves);
   $('score').textContent = S.score;
   const ov = $('objVal');
-  if (def.tipo === 'puntos') { $('objLbl').textContent = 'Meta'; ov.textContent = S.score + '/' + def.objetivoPuntos; ov.classList.remove('romper'); }
-  else { $('objLbl').textContent = 'Romper'; ov.textContent = Math.max(0, S.objRestante) + ' 💎'; ov.classList.add('romper'); }
+  if (def.type === 'points') { $('objLbl').textContent = tr('goal'); ov.textContent = S.score + '/' + def.targetPoints; ov.classList.remove('break'); }
+  else { $('objLbl').textContent = tr('break'); ov.textContent = Math.max(0, S.targetsLeft) + ' 💎'; ov.classList.add('break'); }
 }
 
-export function mostrarCombo (n) {
+export function showCombo (n) {
   const el = $('combo');
-  el.textContent = '¡Combo ×' + n + '!';
+  el.textContent = tr('combo')(n);
   el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
 }
 
-export function aplicarIdioma () {
+export function applyLang () {
   const LANG = getLang();
   document.documentElement.lang = LANG;
-  $('btnMapaTop').textContent = tr('mapa');
-  $('btnMapa2').textContent = tr('mapa');
-  $('mapaRecenter').textContent = tr('nivelActual');
-  $('libroTxt').textContent = tr('guia');
-  $('mapaHint').textContent = tr('hint');
-  $('glosTitulo').textContent = tr('guiaTitulo');
-  $('lblNivel').textContent = tr('lvl');
-  $('lblMov').textContent = tr('mov');
-  $('lblPuntos').textContent = tr('puntos');
-  $('btnSiguiente').textContent = tr('siguiente');
-  $('btnReintentar').textContent = tr('reintentar');
+  $('btnMapTop').textContent = tr('map');
+  $('btnMap2').textContent = tr('map');
+  $('mapRecenter').textContent = tr('currentLevel');
+  $('bookTxt').textContent = tr('guide');
+  $('mapHint').textContent = tr('hint');
+  $('glossaryTitle').textContent = tr('guideTitle');
+  $('lblLevel').textContent = tr('lvl');
+  $('lblMoves').textContent = tr('mov');
+  $('lblPoints').textContent = tr('points');
+  $('btnNext').textContent = tr('next');
+  $('btnRetry').textContent = tr('retry');
   $('btnEndless').textContent = tr('endless');
-  $('btnCompartir').textContent = tr('compartir');
-  $('btnMapaModal').textContent = tr('irMapa');
-  S.glosListo = false;                 // forzar reconstrucción del glosario
-  if (S.def) actualizarHUD();
-  if (S.vista === 'mapa') { try { renderMapa(); } catch (e) {} }
+  $('btnShare').textContent = tr('share');
+  $('btnMapModal').textContent = tr('goToMap');
+  S.glossaryReady = false;                 // forzar reconstrucción del glosario
+  if (S.def) updateHUD();
+  if (S.view === 'map') { try { renderMap(); } catch (e) {} }
 }

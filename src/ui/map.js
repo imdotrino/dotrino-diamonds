@@ -2,48 +2,48 @@
 // flotante del mundo. Verbatim del juego original.
 import { $ } from '../dom.js';
 import { S } from '../state.js';
-import { NIVELES_POR_MUNDO, mundoDeNivel, infoMundo, reqMundo, reqNivel, featMundo } from '../config.js';
-import { estrellasTotales } from '../progress.js';
+import { LEVELS_PER_WORLD, worldOfLevel, worldInfo, reqWorld, reqLevel, worldFeature } from '../config.js';
+import { totalStars } from '../progress.js';
 import { tr } from '../i18n.js';
-import { iniciarNivel } from '../levels.js';
+import { startLevel } from '../levels.js';
 
-export function mostrarVista (v) {
-  S.vista = v;
-  $('vistaMapa').classList.toggle('activa', v === 'mapa');
-  $('vistaJuego').classList.toggle('activa', v === 'juego');
-  $('btnMapaTop').style.display = v === 'juego' ? '' : 'none';
-  $('btnGlosario').style.display = v === 'mapa' ? '' : 'none';
+export function showView (v) {
+  S.view = v;
+  $('mapView').classList.toggle('active', v === 'map');
+  $('gameView').classList.toggle('active', v === 'game');
+  $('btnMapTop').style.display = v === 'game' ? '' : 'none';
+  $('btnGlossary').style.display = v === 'map' ? '' : 'none';
 }
 
-export function irAlMapa () { $('modalFin').classList.remove('abierto'); mostrarVista('mapa'); renderMapa(); }
+export function goToMap () { $('endModal').classList.remove('open'); showView('map'); renderMap(); }
 
 // --- Mapa navegable (pan) ---
 const SVGNS = 'http://www.w3.org/2000/svg';
 
-export function renderMapa () {
-  const vp = $('mapaVp'), lienzo = $('mapaMundo'), svg = $('mapaSvg');
+export function renderMap () {
+  const vp = $('mapViewport'), canvasEl = $('mapWorld'), svg = $('mapSvg');
   const mapDim = S.mapDim;
   mapDim.vw = vp.clientWidth || window.innerWidth;
   mapDim.vh = vp.clientHeight || (window.innerHeight - 120);
   const centerX = Math.max(mapDim.vw, 320) / 2;
   const amp = Math.min(centerX - 60, 120);
 
-  Array.from(lienzo.querySelectorAll('.nivel-nodo,.portal')).forEach(e => e.remove());
+  Array.from(canvasEl.querySelectorAll('.level-node,.portal')).forEach(e => e.remove());
   S.mapStops = [];
 
-  const tot = estrellasTotales();
-  const maxW = mundoDeNivel(S.prog.max) + 1;
+  const tot = totalStars();
+  const maxW = worldOfLevel(S.prog.max) + 1;
 
   for (let w = 1; w <= maxW; w++) {
     if (w > 1) {
-      const rm = reqMundo(w);
-      S.mapStops.push({ type: 'portal', w, abierto: tot >= rm, req: rm, tot });
+      const rm = reqWorld(w);
+      S.mapStops.push({ type: 'portal', w, isOpen: tot >= rm, req: rm, tot });
     }
-    for (let k = 1; k <= NIVELES_POR_MUNDO; k++) {
-      const n = (w - 1) * NIVELES_POR_MUNDO + k;
-      const req = reqNivel(n);
+    for (let k = 1; k <= LEVELS_PER_WORLD; k++) {
+      const n = (w - 1) * LEVELS_PER_WORLD + k;
+      const req = reqLevel(n);
       const unlocked = n <= S.prog.max && tot >= req;
-      S.mapStops.push({ type: 'level', w, k, n, req, unlocked, esActual: n === S.prog.max });
+      S.mapStops.push({ type: 'level', w, k, n, req, unlocked, isCurrent: n === S.prog.max });
     }
   }
 
@@ -56,8 +56,8 @@ export function renderMapa () {
   });
   mapDim.w = Math.max(mapDim.vw, 320);
   mapDim.h = (lastO >= 0 ? 90 + lastO * 118 : 0) + 140;
-  lienzo.style.width = mapDim.w + 'px';
-  lienzo.style.height = mapDim.h + 'px';
+  canvasEl.style.width = mapDim.w + 'px';
+  canvasEl.style.height = mapDim.h + 'px';
 
   svg.setAttribute('width', mapDim.w);
   svg.setAttribute('height', mapDim.h);
@@ -65,11 +65,11 @@ export function renderMapa () {
   for (let i = 1; i < S.mapStops.length; i++) {
     const a = S.mapStops[i - 1], b = S.mapStops[i];
     const d = 'M ' + a.x + ' ' + a.y + ' C ' + a.x + ' ' + ((a.y + b.y) / 2) + ', ' + b.x + ' ' + ((a.y + b.y) / 2) + ', ' + b.x + ' ' + b.y;
-    const tint = infoMundo(b.w).tint;
+    const tint = worldInfo(b.w).tint;
     const seg = document.createElementNS(SVGNS, 'path');
     seg.setAttribute('d', d);
     seg.setAttribute('fill', 'none');
-    const on = (b.type === 'level' ? b.unlocked : b.abierto);
+    const on = (b.type === 'level' ? b.unlocked : b.isOpen);
     seg.setAttribute('stroke', on ? tint : 'rgba(148,163,184,.25)');
     seg.setAttribute('stroke-width', on ? '7' : '5');
     seg.setAttribute('stroke-linecap', 'round');
@@ -78,46 +78,46 @@ export function renderMapa () {
     svg.appendChild(seg);
   }
 
-  S.mapActualXY = null;
+  S.mapCurrentXY = null;
   S.mapStops.forEach(s => {
-    const tint = infoMundo(s.w).tint;
+    const tint = worldInfo(s.w).tint;
     if (s.type === 'portal') {
       const el = document.createElement('button');
-      el.className = 'portal' + (s.abierto ? '' : ' bloq');
+      el.className = 'portal' + (s.isOpen ? '' : ' locked');
       el.style.setProperty('--tint', tint);
       el.style.left = s.x + 'px'; el.style.top = s.y + 'px';
-      const info = infoMundo(s.w);
-      if (s.abierto) {
-        el.innerHTML = '<span class="pn">' + tr('portal') + '</span><span class="pw">' + info.nombre + '</span>';
-        el._accion = () => iniciarNivel((s.w - 1) * NIVELES_POR_MUNDO + 1);
+      const info = worldInfo(s.w);
+      if (s.isOpen) {
+        el.innerHTML = '<span class="pn">' + tr('portal') + '</span><span class="pw">' + info.name + '</span>';
+        el._action = () => startLevel((s.w - 1) * LEVELS_PER_WORLD + 1);
       } else {
         el.innerHTML = '<span class="pn">' + tr('portal') + '</span><span class="plock">🔒 ★' + s.tot + '/' + s.req + '</span>';
       }
-      lienzo.appendChild(el);
+      canvasEl.appendChild(el);
     } else {
       const stars = S.prog.stars[s.n] || 0;
       const el = document.createElement('button');
-      el.className = 'nivel-nodo' + (s.unlocked ? '' : ' bloq') + (s.esActual && s.unlocked ? ' actual' : '');
+      el.className = 'level-node' + (s.unlocked ? '' : ' locked') + (s.isCurrent && s.unlocked ? ' current' : '');
       el.style.setProperty('--tint', tint);
       el.style.left = s.x + 'px'; el.style.top = s.y + 'px';
       if (s.unlocked) {
         el.innerHTML = '<span class="nn">' + s.k + '</span><span class="ne">' + '★'.repeat(stars) + '☆'.repeat(3 - stars) + '</span>';
-        el._accion = () => iniciarNivel(s.n);
+        el._action = () => startLevel(s.n);
       } else if (s.n <= S.prog.max) {
         el.innerHTML = '<span class="nn">🔒</span><span class="ne">★ ' + tot + '/' + s.req + '</span>';
       } else {
         el.innerHTML = '🔒';
       }
-      lienzo.appendChild(el);
-      if (s.esActual) S.mapActualXY = { x: s.x, y: s.y };
+      canvasEl.appendChild(el);
+      if (s.isCurrent) S.mapCurrentXY = { x: s.x, y: s.y };
     }
   });
 
-  if (!S.mapActualXY && S.mapStops.length) S.mapActualXY = { x: S.mapStops[0].x, y: S.mapStops[0].y };
+  if (!S.mapCurrentXY && S.mapStops.length) S.mapCurrentXY = { x: S.mapStops[0].x, y: S.mapStops[0].y };
 
-  initMapaPan();
-  centrarEn(S.mapActualXY, false);
-  actualizarMapaHud();
+  initMapPan();
+  centerOn(S.mapCurrentXY, false);
+  updateMapHud();
 }
 
 // ---- Pan ----
@@ -129,44 +129,44 @@ function clampOff () {
   else mapOff.x = Math.max(minX, Math.min(maxX, mapOff.x));
   mapOff.y = Math.max(minY, Math.min(maxY, mapOff.y));
 }
-function aplicarPan () {
+function applyPan () {
   clampOff();
-  $('mapaMundo').style.transform = 'translate(' + S.mapOff.x + 'px,' + S.mapOff.y + 'px)';
+  $('mapWorld').style.transform = 'translate(' + S.mapOff.x + 'px,' + S.mapOff.y + 'px)';
 }
-function centrarEn (xy, suave) {
+function centerOn (xy, smooth) {
   if (!xy) return;
   S.mapOff.x = S.mapDim.vw / 2 - xy.x;
   S.mapOff.y = S.mapDim.vh / 2 - xy.y;
-  const lienzo = $('mapaMundo');
-  lienzo.style.transition = suave ? 'transform .35s ease' : 'none';
-  aplicarPan();
-  if (suave) setTimeout(() => { lienzo.style.transition = 'none'; }, 360);
+  const canvasEl = $('mapWorld');
+  canvasEl.style.transition = smooth ? 'transform .35s ease' : 'none';
+  applyPan();
+  if (smooth) setTimeout(() => { canvasEl.style.transition = 'none'; }, 360);
 }
-function actualizarMapaHud () {
+function updateMapHud () {
   const cy = -S.mapOff.y + S.mapDim.vh / 2;
   let best = S.mapStops[0], bd = Infinity;
   for (const s of S.mapStops) { const d = Math.abs(s.y - cy); if (d < bd) { bd = d; best = s; } }
   if (!best) return;
-  const info = infoMundo(best.w), tot = estrellasTotales();
-  const hud = $('mapaHud');
+  const info = worldInfo(best.w), tot = totalStars();
+  const hud = $('mapHud');
   hud.style.setProperty('--tint', info.tint);
   hud.innerHTML =
-    '<div><div class="mh-num">Mundo ' + best.w + '</div>' +
-    '<div class="mh-nombre">' + info.nombre + '</div>' +
-    '<div class="mh-feat">' + featMundo(info) + '</div></div>' +
+    '<div><div class="mh-num">' + tr('world') + ' ' + best.w + '</div>' +
+    '<div class="mh-name">' + info.name + '</div>' +
+    '<div class="mh-feat">' + worldFeature(info) + '</div></div>' +
     '<div class="mh-stars">★ ' + tot + '</div>';
 }
 
-function initMapaPan () {
+function initMapPan () {
   if (S.mapPanInit) return;
   S.mapPanInit = true;
-  const vp = $('mapaVp');
+  const vp = $('mapViewport');
   vp.addEventListener('pointerdown', e => {
     S.panStart = { x: e.clientX, y: e.clientY };
     S.panBase = { x: S.mapOff.x, y: S.mapOff.y };
     S.panMoved = false;
     vp.classList.add('dragging');
-    $('mapaMundo').style.transition = 'none';
+    $('mapWorld').style.transition = 'none';
     try { vp.setPointerCapture(e.pointerId); } catch (err) {}
   });
   vp.addEventListener('pointermove', e => {
@@ -174,22 +174,22 @@ function initMapaPan () {
     const dx = e.clientX - S.panStart.x, dy = e.clientY - S.panStart.y;
     if (Math.abs(dx) + Math.abs(dy) > 7) {
       S.panMoved = true;
-      const h = $('mapaHint'); if (h) h.style.opacity = '0';
+      const h = $('mapHint'); if (h) h.style.opacity = '0';
     }
     S.mapOff.x = S.panBase.x + dx; S.mapOff.y = S.panBase.y + dy;
-    aplicarPan();
-    actualizarMapaHud();
+    applyPan();
+    updateMapHud();
   });
-  const fin = e => {
-    const fueTap = S.panStart && !S.panMoved;
+  const onEnd = e => {
+    const wasTap = S.panStart && !S.panMoved;
     S.panStart = null; vp.classList.remove('dragging');
-    if (fueTap && e && typeof e.clientX === 'number') {
+    if (wasTap && e && typeof e.clientX === 'number') {
       const t = document.elementFromPoint(e.clientX, e.clientY);
-      const nodo = t && t.closest && t.closest('.nivel-nodo, .portal');
-      if (nodo && nodo._accion) nodo._accion();
+      const node = t && t.closest && t.closest('.level-node, .portal');
+      if (node && node._action) node._action();
     }
   };
-  vp.addEventListener('pointerup', fin);
+  vp.addEventListener('pointerup', onEnd);
   vp.addEventListener('pointercancel', () => { S.panStart = null; vp.classList.remove('dragging'); });
-  $('mapaRecenter').addEventListener('click', () => centrarEn(S.mapActualXY, true));
+  $('mapRecenter').addEventListener('click', () => centerOn(S.mapCurrentXY, true));
 }

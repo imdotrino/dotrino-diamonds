@@ -57,40 +57,40 @@
     support-href="https://ko-fi.com/dotrino"
     support-repo="imdotrino/dotrino-diamonds"
     support-discord="https://discord.gg/D648uq7cth">
-    <button id="btnMapaTop" class="topbar-accion" style="display:none">← Mapa</button>
+    <button id="btnMapTop" class="topbar-action" style="display:none">← Mapa</button>
     <dotrino-install slot="end" class="cc-install"></dotrino-install>
   </dotrino-topbar>
 
   <!-- ============ VISTA MAPA ============ -->
-  <div class="vista activa" id="vistaMapa">
-    <div class="mapa-vp" id="mapaVp">
-      <div id="mapaMundo">
-        <svg id="mapaSvg"></svg>
+  <div class="view active" id="mapView">
+    <div class="map-vp" id="mapViewport">
+      <div id="mapWorld">
+        <svg id="mapSvg"></svg>
       </div>
     </div>
-    <div class="mapa-hud" id="mapaHud"></div>
-    <div class="mapa-hint" id="mapaHint">Arrastra para explorar el mapa</div>
-    <button class="mapa-recenter" id="mapaRecenter">◎ Nivel actual</button>
-    <button class="mapa-libro" id="btnGlosario" aria-label="Guía">📖<span id="libroTxt">Guía</span></button>
+    <div class="map-hud" id="mapHud"></div>
+    <div class="map-hint" id="mapHint">Arrastra para explorar el mapa</div>
+    <button class="map-recenter" id="mapRecenter">◎ Nivel actual</button>
+    <button class="map-book" id="btnGlossary" aria-label="Guía">📖<span id="bookTxt">Guía</span></button>
   </div>
 
   <!-- ============ VISTA JUEGO ============ -->
-  <div class="vista" id="vistaJuego">
+  <div class="view" id="gameView">
     <div class="scores">
       <div class="score">
-        <div class="lbl" id="lblNivel">Nivel</div>
-        <div class="val" id="hudNivel">1·1</div>
+        <div class="lbl" id="lblLevel">Nivel</div>
+        <div class="val" id="hudLevel">1·1</div>
       </div>
       <div class="score obj">
         <div class="lbl" id="objLbl">Objetivo</div>
         <div class="val" id="objVal">—</div>
       </div>
       <div class="score">
-        <div class="lbl" id="lblMov">Mov.</div>
+        <div class="lbl" id="lblMoves">Mov.</div>
         <div class="val" id="moves">30</div>
       </div>
       <div class="score">
-        <div class="lbl" id="lblPuntos">Puntos</div>
+        <div class="lbl" id="lblPoints">Puntos</div>
         <div class="val" id="score">0</div>
       </div>
     </div>
@@ -100,34 +100,34 @@
     </div>
 
     <div class="control">
-      <button id="btnMapa2">← Mapa</button>
+      <button id="btnMap2">← Mapa</button>
     </div>
   </div>
 
   <!-- ============ GLOSARIO ============ -->
-  <div class="modal glos" id="modalGlosario">
-    <div class="glos-caja">
-      <div class="glos-head">
-        <h2 id="glosTitulo">Guía del juego</h2>
-        <button class="glos-cerrar" id="btnGlosCerrar">✕</button>
+  <div class="modal gloss" id="modalGlossary">
+    <div class="gloss-box">
+      <div class="gloss-head">
+        <h2 id="glossaryTitle">Guía del juego</h2>
+        <button class="gloss-close" id="btnGlossaryClose">✕</button>
       </div>
-      <div class="glos-body" id="glosBody"></div>
+      <div class="gloss-body" id="glossaryBody"></div>
     </div>
   </div>
 
   <div class="combo" id="combo"></div>
 
-  <div class="modal" id="modalFin">
-    <div class="modal-caja">
-      <h2 id="finTitulo">¡Nivel superado!</h2>
-      <div class="estrellas" id="finEstrellas"></div>
-      <p id="finMsg"></p>
-      <div class="modal-botones">
-        <button id="btnSiguiente">Siguiente nivel</button>
-        <button id="btnReintentar">Reintentar</button>
-        <button class="sec" id="btnCompartir">Compartir</button>
+  <div class="modal" id="endModal">
+    <div class="modal-box">
+      <h2 id="endTitle">¡Nivel superado!</h2>
+      <div class="stars" id="endStars"></div>
+      <p id="endMsg"></p>
+      <div class="modal-buttons">
+        <button id="btnNext">Siguiente nivel</button>
+        <button id="btnRetry">Reintentar</button>
+        <button class="sec" id="btnShare">Compartir</button>
         <button class="sec" id="btnEndless">∞ Seguir sin límite</button>
-        <button class="sec" id="btnMapaModal">Ir al mapa</button>
+        <button class="sec" id="btnMapModal">Ir al mapa</button>
       </div>
     </div>
   </div>

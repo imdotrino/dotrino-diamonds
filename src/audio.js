@@ -13,5 +13,5 @@ export function beep (freq = 880, dur = 0.12, vol = 0.4) {
     o.start(); o.stop(actx.currentTime + dur);
   } catch {}
 }
-export function avisoFin () { beep(660, 0.18); setTimeout(() => beep(880, 0.18), 170); setTimeout(() => beep(1175, 0.3), 360); }
-export function vibrar (p) { if (navigator.vibrate) navigator.vibrate(p); }
+export function endChime () { beep(660, 0.18); setTimeout(() => beep(880, 0.18), 170); setTimeout(() => beep(1175, 0.3), 360); }
+export function vibrate (p) { if (navigator.vibrate) navigator.vibrate(p); }

@@ -6,15 +6,15 @@ test('mapa → entrar al nivel 1 → HUD', async ({ page }) => {
   await page.goto('/')
 
   // El mapa está activo y hay al menos un nodo de nivel jugable.
-  await expect(page.locator('#vistaMapa')).toHaveClass(/activa/)
-  const nodo = page.locator('.nivel-nodo:not(.bloq)').first()
-  await expect(nodo).toBeVisible()
+  await expect(page.locator('#mapView')).toHaveClass(/active/)
+  const node = page.locator('.level-node:not(.locked)').first()
+  await expect(node).toBeVisible()
 
   // Tocar el nodo entra al juego (la lógica de "tap" del pan dispara su acción).
   // force: el nodo "actual" pulsa (animación) y nunca es "estable" para Playwright.
-  await nodo.click({ force: true })
-  await expect(page.locator('#vistaJuego')).toHaveClass(/activa/)
-  await expect(page.locator('#hudNivel')).toHaveText('1·1')
+  await node.click({ force: true })
+  await expect(page.locator('#gameView')).toHaveClass(/active/)
+  await expect(page.locator('#hudLevel')).toHaveText('1·1')
   await expect(page.locator('#moves')).toHaveText('30')
   // Nivel 1 es de puntos: objetivo 1120 (600+320+200 redondeado a 10).
   await expect(page.locator('#objVal')).toHaveText('0/1120')
@@ -26,26 +26,26 @@ test('generación determinista del nivel (sin matches, hay jugadas, reproducible
   await page.goto('/')
   const r = await page.evaluate(async () => {
     const { S } = await import('/src/state.js')
-    const { defNivel } = await import('/src/rng.js')
-    const { generarNivel } = await import('/src/engine/levelgen.js')
-    const { tieneMatches, hayMovimientos } = await import('/src/engine/matching.js')
+    const { levelDef } = await import('/src/rng.js')
+    const { generateLevel } = await import('/src/engine/levelgen.js')
+    const { hasMatches, hasMoves } = await import('/src/engine/matching.js')
 
-    const snapshot = () => S.grid.map(row => row.map(g => g.tipo))
+    const snapshot = () => S.grid.map(row => row.map(g => g.type))
 
-    S.def = defNivel(1); generarNivel();
+    S.def = levelDef(1); generateLevel();
     const dims = [S.grid.length, S.grid[0].length]
-    const sinMatches = !tieneMatches()
-    const hayJugadas = hayMovimientos()
+    const noMatches = !hasMatches()
+    const hasPlays = hasMoves()
     const g1 = snapshot()
 
-    S.def = defNivel(1); generarNivel();
+    S.def = levelDef(1); generateLevel();
     const g2 = snapshot()
 
-    return { dims, sinMatches, hayJugadas, igual: JSON.stringify(g1) === JSON.stringify(g2) }
+    return { dims, noMatches, hasPlays, same: JSON.stringify(g1) === JSON.stringify(g2) }
   })
 
   expect(r.dims).toEqual([8, 8])
-  expect(r.sinMatches).toBe(true)
-  expect(r.hayJugadas).toBe(true)
-  expect(r.igual).toBe(true)
+  expect(r.noMatches).toBe(true)
+  expect(r.hasPlays).toBe(true)
+  expect(r.same).toBe(true)
 })

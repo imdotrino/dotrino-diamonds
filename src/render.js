@@ -1,24 +1,24 @@
 // Dimensionado del canvas y dibujo del tablero/gemas. Verbatim del juego original
 // (las referencias a cv/ctx/cell van por el estado compartido S).
 import { S } from './state.js';
-import { N, COLORES } from './config.js';
-import { dibujarFx } from './fx.js';
+import { N, COLORS } from './config.js';
+import { drawFx } from './fx.js';
 
-export function medir () {
+export function measure () {
   const cv = S.cv;
   const wrap = cv.parentElement;
   const rect = wrap.getBoundingClientRect();
-  const lado = Math.floor(Math.min(rect.width, rect.height));
-  if (lado <= 0) return;
+  const side = Math.floor(Math.min(rect.width, rect.height));
+  if (side <= 0) return;
   S.dpr = Math.min(window.devicePixelRatio || 1, 2);
-  cv.style.width = lado + 'px';
-  cv.style.height = lado + 'px';
-  cv.width = Math.floor(lado * S.dpr);
-  cv.height = Math.floor(lado * S.dpr);
-  S.cell = (lado * S.dpr) / N;
+  cv.style.width = side + 'px';
+  cv.style.height = side + 'px';
+  cv.width = Math.floor(side * S.dpr);
+  cv.height = Math.floor(side * S.dpr);
+  S.cell = (side * S.dpr) / N;
 }
 
-export function dibujar () {
+export function draw () {
   const ctx = S.ctx, cv = S.cv, cell = S.cell;
   ctx.clearRect(0, 0, cv.width, cv.height);
   for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
@@ -26,12 +26,12 @@ export function dibujar () {
   }
   for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
     const g = S.grid[r][c];
-    if (g && g.tipo >= 0) dibujarGema(g, S.sel && S.sel.r === r && S.sel.c === c);
+    if (g && g.type >= 0) drawGem(g, S.sel && S.sel.r === r && S.sel.c === c);
   }
-  dibujarFx();
+  drawFx();
 }
 
-export function rombo (cx, cy, half) {
+export function rhombus (cx, cy, half) {
   const ctx = S.ctx;
   ctx.beginPath();
   ctx.moveTo(cx, cy - half); ctx.lineTo(cx + half, cy);
@@ -39,16 +39,16 @@ export function rombo (cx, cy, half) {
   ctx.closePath();
 }
 
-export function dibujarGema (g, seleccionada) {
+export function drawGem (g, selected) {
   const ctx = S.ctx, cell = S.cell;
   const cx = (g.dc + 0.5) * cell, cy = (g.dr + 0.5) * cell;
   const half = cell * 0.40 * g.scale;
-  const esEstrella = g.power === 'estrella';
+  const isStar = g.power === 'star';
 
   // Luz palpitante de "carga" justo antes de explotar
   if (g.charge > 0) {
-    const pulso = 0.55 + 0.45 * Math.sin(S.nowMs / 45);
-    const a = g.charge * pulso;
+    const pulse = 0.55 + 0.45 * Math.sin(S.nowMs / 45);
+    const a = g.charge * pulse;
     const rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, cell * 0.62);
     rg.addColorStop(0, 'rgba(255,255,255,' + (0.9 * a) + ')');
     rg.addColorStop(0.5, 'rgba(255,255,255,' + (0.35 * a) + ')');
@@ -57,15 +57,15 @@ export function dibujarGema (g, seleccionada) {
     ctx.beginPath(); ctx.arc(cx, cy, cell * 0.62, 0, Math.PI * 2); ctx.fill();
   }
 
-  if (seleccionada) {
+  if (selected) {
     ctx.fillStyle = 'rgba(255,255,255,.10)';
     ctx.beginPath(); ctx.arc(cx, cy, cell * 0.46, 0, Math.PI * 2); ctx.fill();
   }
 
   // Base de piedra para diamantes duros
   if (g.hpMax > 1) {
-    const tono = g.hpMax >= 3 ? '#57534e' : '#78716c';
-    ctx.fillStyle = tono;
+    const tone = g.hpMax >= 3 ? '#57534e' : '#78716c';
+    ctx.fillStyle = tone;
     const s = cell * 0.46 * g.scale;
     const rr = cell * 0.12;
     roundRect(cx - s, cy - s, s * 2, s * 2, rr); ctx.fill();
@@ -73,20 +73,20 @@ export function dibujarGema (g, seleccionada) {
     roundRect(cx - s, cy - s, s * 2, s * 2, rr); ctx.stroke();
   }
 
-  const [c1, c2] = esEstrella ? ['#f8fafc', '#cbd5e1'] : COLORES[g.tipo];
+  const [c1, c2] = isStar ? ['#f8fafc', '#cbd5e1'] : COLORS[g.type];
   const grad = ctx.createLinearGradient(cx, cy - half, cx, cy + half);
   grad.addColorStop(0, c1); grad.addColorStop(1, c2);
-  rombo(cx, cy, half); ctx.fillStyle = grad; ctx.fill();
+  rhombus(cx, cy, half); ctx.fillStyle = grad; ctx.fill();
 
   // Facetas
-  rombo(cx, cy, half * 0.55); ctx.fillStyle = 'rgba(255,255,255,.16)'; ctx.fill();
+  rhombus(cx, cy, half * 0.55); ctx.fillStyle = 'rgba(255,255,255,.16)'; ctx.fill();
   ctx.beginPath();
   ctx.moveTo(cx, cy - half); ctx.lineTo(cx + half * 0.35, cy - half * 0.32); ctx.lineTo(cx - half * 0.35, cy - half * 0.32);
   ctx.closePath(); ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.fill();
 
   // Borde
   ctx.lineWidth = Math.max(1, cell * 0.02); ctx.strokeStyle = 'rgba(0,0,0,.18)';
-  rombo(cx, cy, half); ctx.stroke();
+  rhombus(cx, cy, half); ctx.stroke();
 
   // Grietas si está dañado
   if (g.hpMax > 1 && g.hp < g.hpMax) {
@@ -104,14 +104,14 @@ export function dibujarGema (g, seleccionada) {
     ctx.save(); ctx.translate(cx, cy); if (g.power === 'lineV') ctx.rotate(Math.PI / 2);
     ctx.fillRect(-w, -t * 1.6, w * 2, t); ctx.fillRect(-w, t * 0.6, w * 2, t);
     ctx.restore();
-  } else if (g.power === 'bomba') {
+  } else if (g.power === 'bomb') {
     ctx.fillStyle = 'rgba(2,6,15,.55)';
     ctx.beginPath(); ctx.arc(cx, cy, half * 0.5, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = '#fde68a'; ctx.lineWidth = Math.max(1.5, cell * 0.035);
     ctx.beginPath(); ctx.arc(cx, cy, half * 0.5, 0, Math.PI * 2); ctx.stroke();
-  } else if (esEstrella) {
-    estrella4(cx, cy, half * 0.75, half * 0.28);
-  } else if (g.power === 'cometa') {
+  } else if (isStar) {
+    star4(cx, cy, half * 0.75, half * 0.28);
+  } else if (g.power === 'comet') {
     ctx.fillStyle = 'rgba(255,255,255,.92)';
     ctx.beginPath(); ctx.arc(cx, cy, half * 0.26, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = Math.max(1.5, cell * 0.03);
@@ -132,7 +132,7 @@ export function dibujarGema (g, seleccionada) {
   }
 
   // Anillo de objetivo
-  if (g.objetivo) {
+  if (g.isTarget) {
     ctx.strokeStyle = 'rgba(252,211,77,.9)'; ctx.lineWidth = Math.max(1.5, cell * 0.03);
     ctx.setLineDash([cell * 0.12, cell * 0.08]);
     ctx.beginPath(); ctx.arc(cx, cy, half * 1.05, 0, Math.PI * 2); ctx.stroke();
@@ -140,7 +140,7 @@ export function dibujarGema (g, seleccionada) {
   }
 }
 
-export function estrella4 (cx, cy, R, r) {
+export function star4 (cx, cy, R, r) {
   const ctx = S.ctx;
   ctx.fillStyle = '#fff';
   ctx.beginPath();

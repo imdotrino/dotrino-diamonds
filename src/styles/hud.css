@@ -31,4 +31,4 @@
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .score.obj .val { font-size: clamp(14px, 2.6vh, 22px); }
-.score.obj .val.romper { color: #fcd34d; }
+.score.obj .val.break { color: #fcd34d; }

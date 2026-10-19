@@ -19,23 +19,23 @@ import { createBackNav, getBackNav } from '@dotrino/nav';
 
 import { $ } from './dom.js';
 import { S } from './state.js';
-import { defNivel } from './rng.js';
-import { cargarProg } from './progress.js';
+import { levelDef } from './rng.js';
+import { loadProgress } from './progress.js';
 import { loop } from './loop.js';
 import { registerInput } from './input.js';
-import { medir } from './render.js';
-import { mostrarVista, renderMapa, irAlMapa } from './ui/map.js';
-import { abrirGlosario } from './ui/glossary.js';
+import { measure } from './render.js';
+import { showView, renderMap, goToMap } from './ui/map.js';
+import { openGlossary } from './ui/glossary.js';
 import { initTopbar, setShareUrl } from './ui/topbar.js';
-import { iniciarNivel, entrarEndless, compartirNivel } from './levels.js';
+import { startLevel, enterEndless, shareLevel } from './levels.js';
 import { syncProgressFromStore } from './progress.js';
 import { handleInviteHash, startReferrals, onReferralsChange, inviteLink } from './referrals.js';
 
 /* ===================== Init estado ===================== */
 S.cv = $('board');
 S.ctx = S.cv.getContext('2d');
-S.prog = cargarProg();
-S.def = defNivel(1);
+S.prog = loadProgress();
+S.def = levelDef(1);
 
 registerInput();
 
@@ -45,22 +45,22 @@ registerInput();
 initTopbar();
 
 /* ===================== Eventos UI ===================== */
-$('btnMapaTop').addEventListener('click', irAlMapa);
-$('btnMapa2').addEventListener('click', irAlMapa);
-$('btnGlosario').addEventListener('click', abrirGlosario);
-$('btnGlosCerrar').addEventListener('click', () => $('modalGlosario').classList.remove('abierto'));
-$('modalGlosario').addEventListener('click', e => { if (e.target === $('modalGlosario')) $('modalGlosario').classList.remove('abierto'); });
-$('btnMapaModal').addEventListener('click', irAlMapa);
-$('btnSiguiente').addEventListener('click', () => { $('modalFin').classList.remove('abierto'); iniciarNivel(S.def.n + 1); });
-$('btnReintentar').addEventListener('click', () => { $('modalFin').classList.remove('abierto'); iniciarNivel(S.def.n); });
-$('btnEndless').addEventListener('click', entrarEndless);
-$('btnCompartir').addEventListener('click', compartirNivel);
+$('btnMapTop').addEventListener('click', goToMap);
+$('btnMap2').addEventListener('click', goToMap);
+$('btnGlossary').addEventListener('click', openGlossary);
+$('btnGlossaryClose').addEventListener('click', () => $('modalGlossary').classList.remove('open'));
+$('modalGlossary').addEventListener('click', e => { if (e.target === $('modalGlossary')) $('modalGlossary').classList.remove('open'); });
+$('btnMapModal').addEventListener('click', goToMap);
+$('btnNext').addEventListener('click', () => { $('endModal').classList.remove('open'); startLevel(S.def.n + 1); });
+$('btnRetry').addEventListener('click', () => { $('endModal').classList.remove('open'); startLevel(S.def.n); });
+$('btnEndless').addEventListener('click', enterEndless);
+$('btnShare').addEventListener('click', shareLevel);
 
-window.addEventListener('resize', () => { if (S.vista === 'juego') medir(); else if (S.vista === 'mapa') renderMapa(); });
+window.addEventListener('resize', () => { if (S.view === 'game') measure(); else if (S.view === 'map') renderMap(); });
 
 /* ===================== Arranque ===================== */
-mostrarVista('mapa');
-renderMapa();
+showView('map');
+renderMap();
 requestAnimationFrame(loop);
 
 /* ===================== PWA ===================== */
@@ -73,12 +73,12 @@ if ('serviceWorker' in navigator) {
 handleInviteHash().catch(() => {});
 
 // Progreso durable: fusionar lo que haya en el store con lo local y re-pintar.
-syncProgressFromStore().then(ch => { if (ch && S.vista === 'mapa') renderMapa(); }).catch(() => {});
+syncProgressFromStore().then(ch => { if (ch && S.view === 'map') renderMap(); }).catch(() => {});
 
 // Referidos: escuchar acuses y, al cambiar el contador, re-pintar el mapa (las
 // estrellas-bonus desbloquean mundos). El enlace de invitación se enchufa al
 // share de la moneda de support una vez que hay identidad.
-onReferralsChange(() => { if (S.vista === 'mapa') renderMapa(); });
+onReferralsChange(() => { if (S.view === 'map') renderMap(); });
 startReferrals().catch(() => {});
 inviteLink().then(link => { if (link) setShareUrl(link); }).catch(() => {});
 
@@ -93,21 +93,21 @@ const bindModal = (id) => {
   const el = document.getElementById(id); if (!el) return;
   let handle = null;
   const sync = () => {
-    const open = el.classList.contains('abierto');
-    if (open && !handle) handle = nav.open(() => el.classList.remove('abierto'));
+    const open = el.classList.contains('open');
+    if (open && !handle) handle = nav.open(() => el.classList.remove('open'));
     else if (!open && handle) { const h = handle; handle = null; h.close(); }
   };
   new MutationObserver(sync).observe(el, { attributes: true, attributeFilter: ['class'] });
   sync();
 };
-['modalGlosario', 'modalFin'].forEach(bindModal);
+['modalGlossary', 'endModal'].forEach(bindModal);
 // Vista de juego como "página" sobre el mapa: volver regresa al mapa.
-const vj = document.getElementById('vistaJuego');
+const vj = document.getElementById('gameView');
 if (vj) {
   let vh = null;
   const syncV = () => {
-    const on = vj.classList.contains('activa');
-    if (on && !vh) vh = nav.open(() => document.getElementById('btnMapaTop')?.click());
+    const on = vj.classList.contains('active');
+    if (on && !vh) vh = nav.open(() => document.getElementById('btnMapTop')?.click());
     else if (!on && vh) { const h = vh; vh = null; h.close(); }
   };
   new MutationObserver(syncV).observe(vj, { attributes: true, attributeFilter: ['class'] });
