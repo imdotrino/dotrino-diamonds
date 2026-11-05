@@ -1,7 +1,7 @@
 // Resolución del tablero: aplicar la detonación (puntos/animaciones/objetivos),
 // olas naturales y explícitas, efecto de combinar dos power-ups, gravedad (recta +
 // diagonal) y recuperación cuando no hay movimientos. Verbatim del juego original.
-import { S, I, at, gem } from '../state.js';
+import { S, I, at, gem, def } from '../state.js';
 import { N, POINTS_PER_GEM, COLORS } from '../config.js';
 import { tween, easeInQuad, easeOutQuad, easeOutBack, wait } from '../tweens.js';
 import { spawnShards, spawnBeam, spawnRing } from '../fx.js';
@@ -10,12 +10,27 @@ import { collectDetonation } from './blast.js';
 import { beep, vibrate } from '../audio.js';
 import { updateHUD, showCombo } from '../ui/hud.js';
 
+/** @typedef {import('../types.js').Gem} Gem */
+/** @typedef {import('../types.js').Pos} Pos */
+/** @typedef {import('../types.js').Swap} Swap */
+/** @typedef {import('../types.js').Creation} Creation */
+
+/**
+ * Aplica una detonación: puntos, daño a diamantes duros, animaciones y objetivos.
+ * @param {Set<number>} detonated
+ * @param {number} combo
+ * @param {Creation[]} creations power-ups que nacen (sus pivotes no se rompen)
+ */
 export async function applyDetonation (detonated, combo, creations) {
   const cell = S.cell;
   creations.forEach(cr => { const g = at(cr.idx); if (g) { g.power = cr.power; g.hp = 1; g.hpMax = 1; } });
   const pivotSet = new Set(creations.map(c => c.idx));
 
-  const removed = [], damaged = []; let objHit = 0;
+  /** @type {number[]} */
+  const removed = [];
+  /** @type {Gem[]} */
+  const damaged = [];
+  let objHit = 0;
   detonated.forEach(i => {
     const g = at(i); if (!g) return;
     if (pivotSet.has(i)) return;
@@ -40,6 +55,7 @@ export async function applyDetonation (detonated, combo, creations) {
   if (removed.length) await wait(150);
 
   // 2) Estallido en pedazos
+  /** @type {Promise<unknown>[]} */
   const anims = [];
   removed.forEach(i => {
     const g = at(i); if (!g) return;
@@ -56,6 +72,12 @@ export async function applyDetonation (detonated, combo, creations) {
   updateHUD();
 }
 
+/**
+ * Una ola de combinaciones naturales; false si no hubo ninguna.
+ * @param {Swap | null} swap
+ * @param {number} combo
+ * @returns {Promise<boolean>}
+ */
 export async function waveNatural (swap, combo) {
   const { clear, creations } = findGroups(swap);
   if (clear.size === 0 && creations.length === 0) return false;
@@ -65,6 +87,12 @@ export async function waveNatural (swap, combo) {
   return true;
 }
 
+/**
+ * Detona un conjunto dado de casillas (el efecto de un power-up); false si no había nada.
+ * @param {Iterable<number>} initial
+ * @param {number} combo
+ * @returns {Promise<boolean>}
+ */
 export async function waveExplicit (initial, combo) {
   const detonated = collectDetonation(initial, null);
   if (detonated.size === 0) return false;
@@ -73,37 +101,48 @@ export async function waveExplicit (initial, combo) {
 }
 
 // Efecto de intercambiar uno o dos poderes (combos).
+/**
+ * Casillas que barre intercambiar a y b cuando al menos una es un power-up.
+ * @param {Pos} a
+ * @param {Pos} b
+ * @returns {Set<number>}
+ */
 export function swapEffect (a, b) {
   const grid = S.grid;
   const ia = I(a.r, a.c), ib = I(b.r, b.c);
   const ga = at(ia), gb = at(ib);
   const set = new Set([ia, ib]);
   const pa = ga && ga.power, pb = gb && gb.power;
-  const add = i => { if (i >= 0 && i < N * N) set.add(i); };
-  const row = r => { if (r < 0 || r >= N) return; for (let c = 0; c < N; c++) add(I(r, c)); };
-  const col = c => { if (c < 0 || c >= N) return; for (let r = 0; r < N; r++) add(I(r, c)); };
+  const add = (/** @type {number} */ i) => { if (i >= 0 && i < N * N) set.add(i); };
+  const row = (/** @type {number} */ r) => { if (r < 0 || r >= N) return; for (let c = 0; c < N; c++) add(I(r, c)); };
+  const col = (/** @type {number} */ c) => { if (c < 0 || c >= N) return; for (let r = 0; r < N; r++) add(I(r, c)); };
+  /** @type {(r: number, c: number, rad: number) => void} */
   const area = (r, c, rad) => { for (let dr = -rad; dr <= rad; dr++) for (let dc = -rad; dc <= rad; dc++) { const rr = r + dr, cc = c + dc; if (rr >= 0 && rr < N && cc >= 0 && cc < N) add(I(rr, cc)); } };
-  const color = col0 => { for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const g = grid[r][c]; if (g && g.type === col0) add(I(r, c)); } };
+  const color = (/** @type {number} */ col0) => { for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const g = grid[r][c]; if (g && g.type === col0) add(I(r, c)); } };
 
+  /** @type {(col0: number, fn: (r: number, c: number) => void) => void} */
   const eachColor = (col0, fn) => { for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const g = grid[r][c]; if (g && g.type === col0) fn(r, c); } };
+  /** @type {(cnt: number, fn: (r: number, c: number) => void) => void} */
   const shots = (cnt, fn) => {
+    /** @type {Array<[number, number]>} */
     const pool = []; for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const g = grid[r][c]; if (g && g.type >= 0) pool.push([r, c]); }
     for (let k = 0; k < cnt && pool.length; k++) { const [r, c] = pool.splice((Math.random() * pool.length) | 0, 1)[0]; fn(r, c); }
   };
 
   if (pa && pb) {
-    const has = p => pa === p || pb === p;
+    const has = (/** @type {string} */ p) => pa === p || pb === p;
     if (has('star') && pa === pb) {
       for (let i = 0; i < N * N; i++) add(i);                              // estrella + estrella = todo el tablero
     } else if (has('star')) {
-      const other = pa === 'star' ? gb : ga, col0 = other.type;
+      // Con dos power-ups, las dos casillas tienen gema.
+      const other = /** @type {Gem} */ (pa === 'star' ? gb : ga), col0 = other.type;
       if (other.power === 'bomb') eachColor(col0, (r, c) => area(r, c, 1)); // estrella + bomba = cada gema del color explota 3×3
       else if (other.power === 'comet') { color(col0); shots(6, (r, c) => area(r, c, 1)); } // estrella + cometa = borra el color + 6 disparos
       else { eachColor(col0, (r, c) => { row(r); col(c); }); color(col0); } // estrella + rayo = cada gema del color = cruz
     } else if (has('comet') && pa === pb) {
       shots(6, (r, c) => area(r, c, 1));                                    // cometa + cometa = 6 estallidos
     } else if (has('comet')) {
-      const other = pa === 'comet' ? gb : ga;
+      const other = /** @type {Gem} */ (pa === 'comet' ? gb : ga);
       if (other.power === 'bomb') shots(3, (r, c) => area(r, c, 1));        // cometa + bomba = 3 estallidos 3×3
       else shots(3, (r, c) => { row(r); col(c); });                       // cometa + rayo = 3 cruces
     } else if (pa === 'bomb' && pb === 'bomb') {
@@ -115,6 +154,8 @@ export function swapEffect (a, b) {
     }
   } else {
     const pcell = pa ? ia : ib, pg = at(pcell), other = pa ? gb : ga;
+    // swapEffect solo se llama si una de las dos es un power-up.
+    if (!pg) throw new Error('diamonds: swapEffect without a power-up');
     if (pg.power === 'star') pg.targetColor = other ? other.type : pg.type;  // estrella + normal = ese color
     // rayo/bomba/cometa + normal: la detonación expande desde pcell
   }
@@ -123,10 +164,14 @@ export function swapEffect (a, b) {
 
 // Asienta el tablero: gravedad recta + relleno; luego un paso diagonal donde la
 // casilla de abajo está bloqueada. `refill` rellena arriba; `fixed` no se mueve.
+/**
+ * @param {{ refill?: boolean, fixed?: Set<Gem> | null }} [opts]
+ */
 export async function collapse (opts) {
   const refill = !opts || opts.refill !== false;
   const fixed = (opts && opts.fixed) || null;
-  const movable = g => g && !(fixed && fixed.has(g));
+  /** @type {(g: Gem | null) => g is Gem} */
+  const movable = g => !!g && !(fixed && fixed.has(g));
   const grid = S.grid;
 
   let changed = true;
@@ -137,6 +182,7 @@ export async function collapse (opts) {
     let straight = true;
     while (straight) {
       straight = false;
+      /** @type {Promise<void>[]} */
       const tw = [];
       for (let r = N - 2; r >= 0; r--) for (let c = 0; c < N; c++) {
         const g = grid[r][c];
@@ -147,7 +193,7 @@ export async function collapse (opts) {
       }
       if (refill) for (let c = 0; c < N; c++) {
         if (!grid[0][c]) {
-          const g = gem(0, c, (Math.random() * S.def.colors) | 0);
+          const g = gem(0, c, (Math.random() * def().colors) | 0);
           g.dr = -1; grid[0][c] = g;
           tw.push(tween(g, { dr: 0 }, 110)); straight = true; changed = true;
         }
@@ -156,6 +202,7 @@ export async function collapse (opts) {
     }
 
     // 2) Un paso diagonal donde la casilla de abajo está bloqueada.
+    /** @type {Promise<void>[]} */
     const td = [];
     for (let r = N - 2; r >= 0; r--) for (let c = 0; c < N; c++) {
       const g = grid[r][c];
@@ -180,6 +227,7 @@ export async function recover () {
   S.status = 'busy';
   let guard = 0;
   while (!hasMoves() && guard++ < 30) {
+    /** @type {Gem[]} */
     const rem = [];
     for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
       const g = grid[r][c];
@@ -188,6 +236,7 @@ export async function recover () {
     if (!rem.length) break;                  // solo quedan especiales: nada que hacer
     rem.forEach(g => { g.charge = 1; });
     await wait(140);
+    /** @type {Promise<void>[]} */
     const anims = [];
     rem.forEach(g => {
       const cx = (g.dc + 0.5) * S.cell, cy = (g.dr + 0.5) * S.cell;
@@ -195,10 +244,11 @@ export async function recover () {
       anims.push(tween(g, { scale: 0, charge: 0 }, 130, easeInQuad));
     });
     await Promise.all(anims);
-    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (rem.includes(grid[r][c])) grid[r][c] = null;
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const g = grid[r][c]; if (g && rem.includes(g)) grid[r][c] = null; }
 
+    /** @type {Set<Gem>} */
     const fixed = new Set();
-    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (grid[r][c] && grid[r][c].power) fixed.add(grid[r][c]);
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const g = grid[r][c]; if (g && g.power) fixed.add(g); }
     await collapse({ refill: true, fixed });
 
     // Caso especial: tras el rellenado, dejar caer TODO normalmente para que esos

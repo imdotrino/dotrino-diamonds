@@ -5,7 +5,20 @@ import { S } from '../state.js';
 import { COLORS } from '../config.js';
 import { tr } from '../i18n.js';
 
+/**
+ * @typedef {object} GemIconOpts
+ * @property {[string, string]} [col]            colores del degradado
+ * @property {Array<[string, string]>} [cols]    uno por gema (icono doble)
+ * @property {boolean} [wide]                    dos gemas lado a lado
+ * @property {number} [hard]                     golpes (diamante duro)
+ * @property {string | string[]} [glyph]         poder dibujado encima
+ */
+
 // Icono SVG de un diamante (con poder/dureza opcionales), estilo del juego.
+/**
+ * @param {GemIconOpts} [opts]
+ * @returns {string} SVG
+ */
 function svgGem (opts) {
   const o = opts || {};
   const col = o.col || ['#7dd3fc', '#0284c7'];
@@ -30,6 +43,13 @@ function svgGem (opts) {
   });
   return `<svg class="glos-ic${wide ? ' wide' : ''}" viewBox="0 0 ${W} 46" xmlns="http://www.w3.org/2000/svg"><defs>${defs}</defs>${body}</svg>`;
 }
+/**
+ * @param {string | undefined} g
+ * @param {number} cx
+ * @param {number} cy
+ * @param {number} h
+ * @returns {string} SVG
+ */
 function powerGlyph (g, cx, cy, h) {
   if (g === 'lineH') return `<rect x="${cx - h * 0.8}" y="${cy - h * 0.28}" width="${h * 1.6}" height="${h * 0.16}" fill="#fff"/><rect x="${cx - h * 0.8}" y="${cy + h * 0.12}" width="${h * 1.6}" height="${h * 0.16}" fill="#fff"/>`;
   if (g === 'lineV') return `<rect x="${cx - h * 0.28}" y="${cy - h * 0.8}" width="${h * 0.16}" height="${h * 1.6}" fill="#fff"/><rect x="${cx + h * 0.12}" y="${cy - h * 0.8}" width="${h * 0.16}" height="${h * 1.6}" fill="#fff"/>`;
@@ -39,6 +59,11 @@ function powerGlyph (g, cx, cy, h) {
   return '';
 }
 // Mini-diagrama del área afectada en una grilla pequeña.
+/**
+ * @param {number[][]} cells [x, y] encendidas
+ * @param {string} accent
+ * @returns {string} SVG
+ */
 function svgGrid (cells, accent) {
   const n = 5, s = 9, pad = 2, W = n * s + pad * 2;
   let r = '';
@@ -48,13 +73,21 @@ function svgGrid (cells, accent) {
   }
   return `<svg class="gloss-ic" viewBox="0 0 ${W} ${W}" xmlns="http://www.w3.org/2000/svg">${r}</svg>`;
 }
-const rowG = y => { const a = []; for (let x = 0; x < 5; x++) a.push([x, y]); return a; };
-const colG = x => { const a = []; for (let y = 0; y < 5; y++) a.push([x, y]); return a; };
+const rowG = (/** @type {number} */ y) => { /** @type {number[][]} */ const a = []; for (let x = 0; x < 5; x++) a.push([x, y]); return a; };
+const colG = (/** @type {number} */ x) => { /** @type {number[][]} */ const a = []; for (let y = 0; y < 5; y++) a.push([x, y]); return a; };
 const crossG = () => rowG(2).concat(colG(2));
-const areaG = (cx, cy, rad) => { const a = []; for (let y = 0; y < 5; y++) for (let x = 0; x < 5; x++) if (Math.abs(x - cx) <= rad && Math.abs(y - cy) <= rad) a.push([x, y]); return a; };
+/** @type {(cx: number, cy: number, rad: number) => number[][]} */
+const areaG = (cx, cy, rad) => { /** @type {number[][]} */ const a = []; for (let y = 0; y < 5; y++) for (let x = 0; x < 5; x++) if (Math.abs(x - cx) <= rad && Math.abs(y - cy) <= rad) a.push([x, y]); return a; };
 const allG = () => areaG(2, 2, 4);
 
 const PAL = COLORS;
+/**
+ * @param {string} ic SVG
+ * @param {string} title
+ * @param {string} desc
+ * @param {string} how
+ * @returns {string} HTML
+ */
 function item (ic, title, desc, how) {
   return '<div class="gloss-item">' + ic + '<div class="gloss-tx"><b>' + title + '</b><span>' + desc +
     (how ? ' <span class="how">' + how + '</span>' : '') + '</span></div></div>';

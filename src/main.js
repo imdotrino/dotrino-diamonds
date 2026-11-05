@@ -18,7 +18,7 @@ import '@dotrino/install';
 import { createBackNav, getBackNav } from '@dotrino/nav';
 
 import { $ } from './dom.js';
-import { S } from './state.js';
+import { S, def } from './state.js';
 import { levelDef } from './rng.js';
 import { loadProgress } from './progress.js';
 import { loop } from './loop.js';
@@ -32,8 +32,11 @@ import { syncProgressFromStore } from './progress.js';
 import { handleInviteHash, startReferrals, onReferralsChange, inviteLink } from './referrals.js';
 
 /* ===================== Init estado ===================== */
-S.cv = $('board');
-S.ctx = S.cv.getContext('2d');
+const boardCanvas = /** @type {HTMLCanvasElement} */ ($('board'));
+const boardCtx = boardCanvas.getContext('2d');
+if (!boardCtx) throw new Error('diamonds: no 2d canvas context');
+S.cv = boardCanvas;
+S.ctx = boardCtx;
 S.prog = loadProgress();
 S.def = levelDef(1);
 
@@ -51,8 +54,8 @@ $('btnGlossary').addEventListener('click', openGlossary);
 $('btnGlossaryClose').addEventListener('click', () => $('modalGlossary').classList.remove('open'));
 $('modalGlossary').addEventListener('click', e => { if (e.target === $('modalGlossary')) $('modalGlossary').classList.remove('open'); });
 $('btnMapModal').addEventListener('click', goToMap);
-$('btnNext').addEventListener('click', () => { $('endModal').classList.remove('open'); startLevel(S.def.n + 1); });
-$('btnRetry').addEventListener('click', () => { $('endModal').classList.remove('open'); startLevel(S.def.n); });
+$('btnNext').addEventListener('click', () => { $('endModal').classList.remove('open'); startLevel(def().n + 1); });
+$('btnRetry').addEventListener('click', () => { $('endModal').classList.remove('open'); startLevel(def().n); });
 $('btnEndless').addEventListener('click', enterEndless);
 $('btnShare').addEventListener('click', shareLevel);
 
@@ -89,8 +92,9 @@ inviteLink().then(link => { if (link) setShareUrl(link); }).catch(() => {});
 // defecto): reusamos ESE. Crear otro dejaría dos trampas de popstate compitiendo.
 const nav = getBackNav() || createBackNav();
 // Capa por modal (se abren/cierran con la clase `abierto`).
-const bindModal = (id) => {
+const bindModal = (/** @type {string} */ id) => {
   const el = document.getElementById(id); if (!el) return;
+  /** @type {{ close: () => void } | null} */
   let handle = null;
   const sync = () => {
     const open = el.classList.contains('open');
@@ -104,6 +108,7 @@ const bindModal = (id) => {
 // Vista de juego como "página" sobre el mapa: volver regresa al mapa.
 const vj = document.getElementById('gameView');
 if (vj) {
+  /** @type {{ close: () => void } | null} */
   let vh = null;
   const syncV = () => {
     const on = vj.classList.contains('active');

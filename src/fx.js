@@ -1,8 +1,9 @@
 // Efectos visuales: partículas (esquirlas), haces, ondas y destellos. Se dibujan
 // sobre el canvas y se actualizan desde el loop. Verbatim del juego original.
-import { S } from './state.js';
+import { S, canvas } from './state.js';
 import { easeOutQuad } from './tweens.js';
 
+/** @param {number} dt ms desde el cuadro anterior */
 export function updateFx (dt) {
   const s = Math.min(dt, 40) / 1000;       // seg. (clamp para no saltar)
   for (let i = S.fx.length - 1; i >= 0; i--) {
@@ -16,10 +17,16 @@ export function updateFx (dt) {
   }
 }
 
-export const cellCenterX = c => (c + 0.5) * S.cell;
-export const cellCenterY = r => (r + 0.5) * S.cell;
+export const cellCenterX = (/** @type {number} */ c) => (c + 0.5) * S.cell;
+export const cellCenterY = (/** @type {number} */ r) => (r + 0.5) * S.cell;
 
 // Estallido en pedazos: esquirlas triangulares que salen volando.
+/**
+ * @param {number} cx
+ * @param {number} cy
+ * @param {string} c1
+ * @param {string} c2
+ */
 export function spawnShards (cx, cy, c1, c2) {
   const cell = S.cell;
   const n = 7 + ((Math.random() * 4) | 0);
@@ -40,16 +47,29 @@ export function spawnShards (cx, cy, c1, c2) {
 }
 
 // Haz que fluye de (r0,c0) a (r1,c1).
+/**
+ * @param {number} r0
+ * @param {number} c0
+ * @param {number} r1
+ * @param {number} c1
+ * @param {string} color
+ */
 export function spawnBeam (r0, c0, r1, c1, color) {
   S.fx.push({ kind: 'beam', x0: cellCenterX(c0), y0: cellCenterY(r0), x1: cellCenterX(c1), y1: cellCenterY(r1), color, t: 0, dur: 300 });
 }
 // Onda expansiva (bomba).
+/**
+ * @param {number} r
+ * @param {number} c
+ * @param {number} radius px
+ * @param {string} color
+ */
 export function spawnRing (r, c, radius, color) {
   S.fx.push({ kind: 'ring', x: cellCenterX(c), y: cellCenterY(r), r: radius, color, t: 0, dur: 320 });
 }
 
 export function drawFx () {
-  const ctx = S.ctx, cell = S.cell;
+  const { ctx } = canvas(), cell = S.cell;
   for (const p of S.fx) {
     const k = p.t / p.dur, life = 1 - k;
     if (p.kind === 'beam') {

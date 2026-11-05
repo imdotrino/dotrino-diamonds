@@ -2,6 +2,10 @@
 // n siempre se genera igual. Verbatim del juego original.
 import { features, worldOfLevel, levelInWorld, worldInfo } from './config.js';
 
+/**
+ * @param {number} a semilla
+ * @returns {() => number} números en [0, 1)
+ */
 export function mulberry32 (a) {
   return function () {
     a |= 0; a = a + 0x6D2B79F5 | 0;
@@ -12,6 +16,10 @@ export function mulberry32 (a) {
 }
 
 // Definición determinista del nivel n (1-based global).
+/**
+ * @param {number} n nivel global (1-based)
+ * @returns {import('./types.js').LevelDef}
+ */
 export function levelDef (n) {
   const w = worldOfLevel(n), em = levelInWorld(n);
   const f = features(w);

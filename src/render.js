@@ -1,12 +1,15 @@
 // Dimensionado del canvas y dibujo del tablero/gemas. Verbatim del juego original
 // (las referencias a cv/ctx/cell van por el estado compartido S).
-import { S } from './state.js';
+import { S, canvas } from './state.js';
 import { N, COLORS } from './config.js';
 import { drawFx } from './fx.js';
 
+/** @typedef {import('./types.js').Gem} Gem */
+
 export function measure () {
-  const cv = S.cv;
+  const { cv } = canvas();
   const wrap = cv.parentElement;
+  if (!wrap) throw new Error('diamonds: board canvas is not in the page');
   const rect = wrap.getBoundingClientRect();
   const side = Math.floor(Math.min(rect.width, rect.height));
   if (side <= 0) return;
@@ -19,28 +22,37 @@ export function measure () {
 }
 
 export function draw () {
-  const ctx = S.ctx, cv = S.cv, cell = S.cell;
+  const { ctx, cv } = canvas(), cell = S.cell;
   ctx.clearRect(0, 0, cv.width, cv.height);
   for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
     if ((r + c) % 2 === 0) { ctx.fillStyle = 'rgba(148,163,184,.04)'; ctx.fillRect(c * cell, r * cell, cell, cell); }
   }
   for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
     const g = S.grid[r][c];
-    if (g && g.type >= 0) drawGem(g, S.sel && S.sel.r === r && S.sel.c === c);
+    if (g && g.type >= 0) drawGem(g, !!S.sel && S.sel.r === r && S.sel.c === c);
   }
   drawFx();
 }
 
+/**
+ * @param {number} cx
+ * @param {number} cy
+ * @param {number} half
+ */
 export function rhombus (cx, cy, half) {
-  const ctx = S.ctx;
+  const { ctx } = canvas();
   ctx.beginPath();
   ctx.moveTo(cx, cy - half); ctx.lineTo(cx + half, cy);
   ctx.lineTo(cx, cy + half); ctx.lineTo(cx - half, cy);
   ctx.closePath();
 }
 
+/**
+ * @param {Gem} g
+ * @param {boolean} selected
+ */
 export function drawGem (g, selected) {
-  const ctx = S.ctx, cell = S.cell;
+  const { ctx } = canvas(), cell = S.cell;
   const cx = (g.dc + 0.5) * cell, cy = (g.dr + 0.5) * cell;
   const half = cell * 0.40 * g.scale;
   const isStar = g.power === 'star';
@@ -140,8 +152,15 @@ export function drawGem (g, selected) {
   }
 }
 
+/**
+ * Estrella de 4 puntas.
+ * @param {number} cx
+ * @param {number} cy
+ * @param {number} R radio exterior
+ * @param {number} r radio interior
+ */
 export function star4 (cx, cy, R, r) {
-  const ctx = S.ctx;
+  const { ctx } = canvas();
   ctx.fillStyle = '#fff';
   ctx.beginPath();
   for (let i = 0; i < 8; i++) {
@@ -153,8 +172,15 @@ export function star4 (cx, cy, R, r) {
   ctx.closePath(); ctx.fill();
 }
 
+/**
+ * @param {number} x
+ * @param {number} y
+ * @param {number} w
+ * @param {number} h
+ * @param {number} r radio de las esquinas
+ */
 export function roundRect (x, y, w, h, r) {
-  const ctx = S.ctx;
+  const { ctx } = canvas();
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + w, y, x + w, y + h, r);

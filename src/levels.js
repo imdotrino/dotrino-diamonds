@@ -2,7 +2,7 @@
 // libre (endless), pantalla de fin y compartir. Verbatim del juego original salvo
 // el fallback de compartir, que usa toast (no window.prompt: §5 sin prompts).
 import { $ } from './dom.js';
-import { S } from './state.js';
+import { S, def as currentDef, prog } from './state.js';
 import { levelDef } from './rng.js';
 import { generateLevel, countTargets } from './engine/levelgen.js';
 import { hasMoves } from './engine/matching.js';
@@ -14,23 +14,28 @@ import { measure } from './render.js';
 import { tr } from './i18n.js';
 import { beep, endChime } from './audio.js';
 
+/** @returns {'win' | 'lose' | null} null = la partida sigue */
 export function checkResult () {
   if (S.endless) return null;   // en modo libre el nivel nunca termina
-  if (S.def.type === 'points' && S.score >= S.def.targetPoints) return 'win';
-  if (S.def.type === 'break' && S.targetsLeft <= 0) return 'win';
+  const def = currentDef();
+  if (def.type === 'points' && S.score >= def.targetPoints) return 'win';
+  if (def.type === 'break' && S.targetsLeft <= 0) return 'win';
   if (S.moves <= 0) return 'lose';
   return null;
 }
 
+/** @returns {number} 1..3 */
 export function starsEarned () {
-  if (S.def.type === 'points') { const r = S.score / S.def.targetPoints; return r >= 1.6 ? 3 : r >= 1.2 ? 2 : 1; }
-  const r = S.moves / S.def.moves; return r >= 0.5 ? 3 : r >= 0.25 ? 2 : 1;
+  const def = currentDef();
+  if (def.type === 'points') { const r = S.score / def.targetPoints; return r >= 1.6 ? 3 : r >= 1.2 ? 2 : 1; }
+  const r = S.moves / def.moves; return r >= 0.5 ? 3 : r >= 0.25 ? 2 : 1;
 }
 
+/** @param {number} n */
 export function startLevel (n) {
   if (!isUnlocked(n)) { beep(300, 0.18, 0.3); return; }
-  S.def = levelDef(n);
-  S.score = 0; S.moves = S.def.moves; S.sel = null; S.status = 'idle'; S.endless = false;
+  const def = S.def = levelDef(n);
+  S.score = 0; S.moves = def.moves; S.sel = null; S.status = 'idle'; S.endless = false;
   generateLevel();
   S.targetsLeft = countTargets();
   showView('game');
@@ -49,8 +54,15 @@ export async function enterEndless () {
   S.status = 'idle';
 }
 
+/** @type {ReturnType<typeof setTimeout> | undefined} */
+let toastTimer;
+/**
+ * Aviso breve abajo de la pantalla (el #toast se crea la primera vez).
+ * @param {string} txt
+ * @param {number} [ms]
+ */
 export function toast (txt, ms = 1800) {
-  let t = $('toast');
+  let t = document.getElementById('toast');
   if (!t) {
     t = document.createElement('div');
     t.id = 'toast';
@@ -59,16 +71,18 @@ export function toast (txt, ms = 1800) {
   }
   t.textContent = txt;
   t.style.opacity = '1';
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => { t.style.opacity = '0'; }, ms);
+  const el = t;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.style.opacity = '0'; }, ms);
 }
 
 export async function shareLevel () {
   if (!S.endShare) return;
   const url = 'https://diamonds.dotrino.com/';
   const msgs = tr('shareMsgs');
+  const share = S.endShare;
   const pick = msgs[Math.floor(Math.random() * msgs.length)];
-  const text = pick(S.endShare.level, S.endShare.starsEarned, url);
+  const text = pick(share.level, share.starsEarned, url);
   try {
     if (navigator.share) { await navigator.share({ title: 'Diamonds', text: text, url }); return; }
   } catch (_) { return; /* el usuario canceló el diálogo nativo */ }
@@ -81,10 +95,10 @@ export async function shareLevel () {
 }
 
 export function levelCompleted () {
-  const def = S.def;
+  const def = currentDef(), p = prog();
   const e = starsEarned();
-  S.prog.stars[def.n] = Math.max(S.prog.stars[def.n] || 0, e);
-  S.prog.max = Math.max(S.prog.max, def.n + 1);
+  p.stars[def.n] = Math.max(p.stars[def.n] || 0, e);
+  p.max = Math.max(p.max, def.n + 1);
   saveProgress();
   $('endTitle').textContent = tr('cleared');
   paintStars(e);
@@ -97,7 +111,7 @@ export function levelCompleted () {
   endChime();
 }
 export function levelFailed () {
-  const def = S.def;
+  const def = currentDef();
   $('endTitle').textContent = tr('noMoves');
   paintStars(0);
   $('endMsg').textContent = def.type === 'points'
@@ -115,6 +129,7 @@ export function finishIfDone () {
   else if (r === 'lose') levelFailed();
 }
 
+/** @param {number} e estrellas ganadas (0..3) */
 export function paintStars (e) {
   let h = '';
   for (let i = 0; i < 3; i++) h += '<span class="' + (i < e ? 'on' : 'off') + '">★</span>';

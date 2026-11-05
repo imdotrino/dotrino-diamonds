@@ -20,6 +20,7 @@ const LEGACY_LANG_KEY = 'diamonds_lang';
   } catch (e) {}
 })();
 
+/** @type {'es' | 'en'} */
 let LANG = (() => {
   let s = null;
   try { s = localStorage.getItem(LANG_KEY); } catch (e) {}
@@ -27,8 +28,7 @@ let LANG = (() => {
   return (navigator.language || 'es').toLowerCase().startsWith('en') ? 'en' : 'es';
 })();
 
-export const STR = {
-  es: {
+const ES = {
     storeProblem: 'No se pudo abrir tu almacén: esta partida no se guardará.',
     map: '← Mapa', currentLevel: '◎ Nivel actual', guide: 'Guía',
     hint: 'Arrastra para explorar el mapa', portal: 'Portal',
@@ -40,15 +40,15 @@ export const STR = {
     endless: '∞ Seguir sin límite', goToMap: 'Ir al mapa',
     share: 'Compartir', copied: 'Texto copiado',
     shareMsgs: [
-      (l, e, u) => '💎 Acabo de superar el nivel ' + l + ' en Diamonds con ' + e + ' ⭐. ¿Me superas? 😏 ' + u,
-      (l, e, u) => '🚀 Llegué al nivel ' + l + ' en Diamonds. A ver si me alcanzas 👀 ' + u,
-      (l, e, u) => '🏆 Nivel ' + l + ' completado en Diamonds. No creo que me ganes 😎 ' + u,
-      (l, e, u) => '💎🔥 Voy por el nivel ' + l + ' de Diamonds. ¿Tú dónde andas? 🤔 ' + u,
-      (l, e, u) => '⭐ ' + e + ' estrellas en el nivel ' + l + ' de Diamonds. Tu turno 😜 ' + u,
+      (/** @type {number} */ l, /** @type {number} */ e, /** @type {string} */ u) => '💎 Acabo de superar el nivel ' + l + ' en Diamonds con ' + e + ' ⭐. ¿Me superas? 😏 ' + u,
+      (/** @type {number} */ l, /** @type {number} */ e, /** @type {string} */ u) => '🚀 Llegué al nivel ' + l + ' en Diamonds. A ver si me alcanzas 👀 ' + u,
+      (/** @type {number} */ l, /** @type {number} */ e, /** @type {string} */ u) => '🏆 Nivel ' + l + ' completado en Diamonds. No creo que me ganes 😎 ' + u,
+      (/** @type {number} */ l, /** @type {number} */ e, /** @type {string} */ u) => '💎🔥 Voy por el nivel ' + l + ' de Diamonds. ¿Tú dónde andas? 🤔 ' + u,
+      (/** @type {number} */ l, /** @type {number} */ e, /** @type {string} */ u) => '⭐ ' + e + ' estrellas en el nivel ' + l + ' de Diamonds. Tu turno 😜 ' + u,
     ],
-    pointsN: n => 'Puntos: ' + n, movesLeft: n => 'Movimientos restantes: ' + n,
-    missingPoints: n => 'Te faltaron ' + n + ' puntos', diamondsLeft: n => 'Quedaban ' + n + ' diamantes',
-    combo: n => '¡Combo ×' + n + '!',
+    pointsN: (/** @type {number} */ n) => 'Puntos: ' + n, movesLeft: (/** @type {number} */ n) => 'Movimientos restantes: ' + n,
+    missingPoints: (/** @type {number} */ n) => 'Te faltaron ' + n + ' puntos', diamondsLeft: (/** @type {number} */ n) => 'Quedaban ' + n + ' diamantes',
+    combo: (/** @type {number} */ n) => '¡Combo ×' + n + '!',
     // glosario
     gPlay: 'Cómo jugar', gDiam: 'Diamantes',
     gPow: 'Power-ups (se crean al combinar)', gComb: 'Combinaciones (intercambia dos power-ups)',
@@ -70,8 +70,10 @@ export const STR = {
     gC5T: 'Cometa + Cometa', gC5D: '6 estallidos repartidos.',
     gC6T: 'Estrella + Rayo/Bomba', gC6D: 'Convierte cada gema de un color en rayo o bomba.',
     gC7T: 'Estrella + Estrella', gC7D: '¡Arrasa todo el tablero!',
-  },
-  en: {
+};
+
+/** @type {typeof ES} */
+const EN = {
     storeProblem: 'Could not open your storage: this game will not be saved.',
     map: '← Map', currentLevel: '◎ Current level', guide: 'Guide',
     hint: 'Drag to explore the map', portal: 'Portal',
@@ -112,11 +114,21 @@ export const STR = {
     gC5T: 'Comet + Comet', gC5D: '6 scattered blasts.',
     gC6T: 'Star + Lightning/Bomb', gC6D: 'Turns every gem of a color into lightning or bomb.',
     gC7T: 'Star + Star', gC7D: 'Wipes the whole board!',
-  },
 };
 
-export const tr = k => { const v = (STR[LANG] || STR.es)[k]; return v != null ? v : (STR.es[k] != null ? STR.es[k] : k); };
+/** @typedef {typeof ES} Strings */
+export const STR = { es: ES, en: EN };
+
+/**
+ * El texto (o la función que lo arma) de la clave k en el idioma activo; cae al español.
+ * @template {keyof Strings} K
+ * @param {K} k
+ * @returns {Strings[K]}
+ */
+export const tr = k => { const v = (STR[LANG] || STR.es)[k]; return v != null ? v : (STR.es[k] != null ? STR.es[k] : /** @type {Strings[K]} */ (/** @type {unknown} */ (k))); };
+/** @returns {'es' | 'en'} */
 export const getLang = () => LANG;
 // El topbar ya persiste en 'dotrino.lang' al cambiar; aquí solo sincronizamos el
 // valor en memoria (y lo dejamos escrito por si el evento llegara de otra fuente).
+/** @param {'es' | 'en'} l */
 export function setLang (l) { LANG = l; try { localStorage.setItem(LANG_KEY, LANG); } catch (e) {} }

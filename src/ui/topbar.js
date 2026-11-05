@@ -7,6 +7,7 @@ import { getReputation } from '../reputation.js';
 import { setLang } from '../i18n.js';
 import { applyLang } from './hud.js';
 
+/** @returns {import('@dotrino/topbar').DotrinoTopbar | null} */
 export const topbar = () => document.querySelector('dotrino-topbar');
 
 /**
@@ -43,10 +44,12 @@ export function initTopbar () {
  * La moneda vive en el shadow DOM del topbar y éste la RECREA en cada render
  * (avatar del perfil, cambio de idioma), así que hay que re-aplicar el atributo.
  */
+/** @param {string | null | undefined} link */
 export function setShareUrl (link) {
   const tb = topbar();
-  if (!tb || !tb.shadowRoot || !link) return;
-  const apply = () => tb.shadowRoot.querySelector('dotrino-support')?.setAttribute('share-url', link);
+  const root = tb && tb.shadowRoot;
+  if (!root || !link) return;
+  const apply = () => root.querySelector('dotrino-support')?.setAttribute('share-url', link);
   apply();
-  new MutationObserver(apply).observe(tb.shadowRoot, { childList: true });
+  new MutationObserver(apply).observe(root, { childList: true });
 }

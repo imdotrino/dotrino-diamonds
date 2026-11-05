@@ -25,28 +25,40 @@ const LS_REPORTED = 'diamonds_invited_by'; // (legacy) invitadores ya reportados
 export const STARS_PER_REFERRAL = 3;
 export const STARS_PER_CONSUMED = 1;
 
+/** @typedef {{ referrals: number, consumed: number }} ReferralCounts */
+
+/** @type {Set<string>} */
 let _set = new Set();        // referidos (invitador)
+/** @type {Set<string>} */
 let _consumed = new Set();   // links consumidos (consumidor)
+/** @type {(counts: ReferralCounts) => void} */
 let _onChange = () => {};
+/** @type {import('@dotrino/notifications').ShareReceipts | null} */
 let _receipts = null;
 
+/** @returns {number} */
 export function referralCount () { return _set.size; }
+/** @returns {number} */
 export function consumedCount () { return _consumed.size; }
+/** @returns {number} */
 export function referralBonusStars () { return _set.size * STARS_PER_REFERRAL; }
+/** @returns {number} */
 export function consumedBonusStars () { return _consumed.size * STARS_PER_CONSUMED; }
+/** @param {((counts: ReferralCounts) => void) | null | undefined} fn */
 export function onReferralsChange (fn) { _onChange = fn || (() => {}); }
 
 function emit () { try { _onChange({ referrals: _set.size, consumed: _consumed.size }); } catch {} }
 
 function loadLocal () {
-  try { const a = JSON.parse(localStorage.getItem(LS_REF)); if (Array.isArray(a)) _set = new Set(a); } catch {}
-  try { const a = JSON.parse(localStorage.getItem(LS_CONSUMED)); if (Array.isArray(a)) _consumed = new Set(a); } catch {}
+  try { const a = JSON.parse(/** @type {string} */ (localStorage.getItem(LS_REF))); if (Array.isArray(a)) _set = new Set(a); } catch {}
+  try { const a = JSON.parse(/** @type {string} */ (localStorage.getItem(LS_CONSUMED))); if (Array.isArray(a)) _consumed = new Set(a); } catch {}
   // Migración del flag legacy de invitadores reportados → set de consumidos.
-  try { const a = JSON.parse(localStorage.getItem(LS_REPORTED)); if (Array.isArray(a)) for (const pk of a) _consumed.add(pk); } catch {}
+  try { const a = JSON.parse(/** @type {string} */ (localStorage.getItem(LS_REPORTED))); if (Array.isArray(a)) for (const pk of a) _consumed.add(pk); } catch {}
 }
 function saveSet () { try { localStorage.setItem(LS_REF, JSON.stringify([..._set])); } catch {} }
 function saveConsumed () { try { localStorage.setItem(LS_CONSUMED, JSON.stringify([..._consumed])); } catch {} }
 
+/** @param {string | null | undefined} pk */
 function addReferral (pk) {
   if (!pk || _set.has(pk)) return;
   _set.add(pk);
@@ -56,6 +68,10 @@ function addReferral (pk) {
 }
 
 // Marca un link de OTRO como consumido (me da estrellas-bonus). Dedup por pubkey.
+/**
+ * @param {string | null | undefined} pk
+ * @returns {boolean} true si se contó
+ */
 function addConsumed (pk) {
   if (!pk || _consumed.has(pk)) return false;
   _consumed.add(pk);
@@ -65,6 +81,7 @@ function addConsumed (pk) {
   return true;
 }
 
+/** @returns {import('@dotrino/notifications').ShareReceipts} */
 function receipts () {
   if (!_receipts) {
     _receipts = createShareReceipts({
@@ -78,7 +95,10 @@ function receipts () {
   return _receipts;
 }
 
-/** Mi enlace de invitación (`#i=<pubkey empacada>`), o null si no hay identidad. */
+/**
+ * Mi enlace de invitación (`#i=<pubkey empacada>`), o null si no hay identidad.
+ * @returns {Promise<string | null>}
+ */
 export async function inviteLink () {
   const id = await getIdentity();
   const pk = id && id.me && id.me.publickey;

@@ -4,6 +4,7 @@ import { S } from './state.js';
 import { updateFx } from './fx.js';
 import { draw } from './render.js';
 
+/** @param {number} ts */
 export function loop (ts) {
   const dt = S.lastTs ? (ts - S.lastTs) : 16;
   S.lastTs = ts; S.nowMs = ts;
@@ -11,7 +12,11 @@ export function loop (ts) {
     const tw = S.tweens[i];
     tw.t += dt;
     const k = Math.min(1, tw.t / tw.dur), e = tw.ease(k);
-    for (const p in tw.props) tw.obj[p] = tw.from[p] + (tw.props[p] - tw.from[p]) * e;
+    for (const p in tw.props) {
+      const k = /** @type {import('./types.js').TweenKey} */ (p);
+      const from = /** @type {number} */ (tw.from[k]), to = /** @type {number} */ (tw.props[k]);
+      tw.obj[k] = from + (to - from) * e;
+    }
     if (k >= 1) { S.tweens.splice(i, 1); tw.done(); }
   }
   updateFx(dt);

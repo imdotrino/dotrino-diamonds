@@ -2,12 +2,15 @@
 // idioma). Verbatim del juego original.
 import { getLang } from './i18n.js';
 
+/** @typedef {import('./types.js').WorldInfo} WorldInfo */
+
 export const N = 8;                 // tablero N×N
 export const POINTS_PER_GEM = 12;          // puntos por gema eliminada
 export const LEVELS_PER_WORLD = 10;
 export const PROG_KEY = 'diamonds_prog';
 
 // Paleta de gemas (claro arriba, oscuro abajo => aspecto de diamante)
+/** @type {Array<[string, string]>} */
 export const COLORS = [
   ['#fda4af', '#e11d48'], // rojo
   ['#fdba74', '#ea580c'], // naranja
@@ -19,6 +22,7 @@ export const COLORS = [
 
 // Mundos: cada uno añade una mecánica. Más allá del último se repite "Caos"
 // y la dificultad sigue escalando por fórmula.
+/** @type {WorldInfo[]} */
 export const WORLDS = [
   { name: 'Cristal',  tint: '#22d3ee', feat: 'Combina y crea poderes',              featEn: 'Match and create power-ups' },
   { name: 'Escarcha', tint: '#7dd3fc', feat: 'Diamantes duros (2 golpes)',          featEn: 'Hard diamonds (2 hits)' },
@@ -28,15 +32,17 @@ export const WORLDS = [
   { name: 'Caos',     tint: '#fb7185', feat: 'Todo combinado',                       featEn: 'Everything combined' },
 ];
 
-export const worldFeature = info => (getLang() === 'en' && info.featEn) ? info.featEn : info.feat;
-export const worldOfLevel = n => Math.floor((n - 1) / LEVELS_PER_WORLD) + 1;
-export const levelInWorld = n => ((n - 1) % LEVELS_PER_WORLD) + 1;
-export const worldInfo = w => WORLDS[Math.min(w - 1, WORLDS.length - 1)];
+export const worldFeature = (/** @type {WorldInfo} */ info) => (getLang() === 'en' && info.featEn) ? info.featEn : info.feat;
+export const worldOfLevel = (/** @type {number} */ n) => Math.floor((n - 1) / LEVELS_PER_WORLD) + 1;
+export const levelInWorld = (/** @type {number} */ n) => ((n - 1) % LEVELS_PER_WORLD) + 1;
+export const worldInfo = (/** @type {number} */ w) => WORLDS[Math.min(w - 1, WORLDS.length - 1)];
 
 // Estrellas necesarias para entrar al mundo w (puerta del nivel 1).
+/** @param {number} w @returns {number} */
 export function reqWorld (w) { return w <= 1 ? 0 : Math.floor((w - 1) * LEVELS_PER_WORLD * 3 * 0.45); }
 // Estrellas que exige el nivel n (0 = ninguna). Puerta de mundo (em=1) y
 // nivel "jefe" al final de cada mundo (em=último).
+/** @param {number} n @returns {number} */
 export function reqLevel (n) {
   const w = worldOfLevel(n), em = levelInWorld(n);
   if (em === 1) return reqWorld(w);
@@ -45,6 +51,7 @@ export function reqLevel (n) {
 }
 
 // Mecánicas desbloqueadas por mundo (incremental).
+/** @param {number} w */
 export function features (w) {
   return {
     colors: w >= 3 ? 6 : 5,   // Prisma añade el 6º color

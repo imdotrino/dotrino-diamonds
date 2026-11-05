@@ -1,12 +1,16 @@
 // Vista de mapa de mundos (lienzo navegable con pan), conmutación de vistas y HUD
 // flotante del mundo. Verbatim del juego original.
 import { $ } from '../dom.js';
-import { S } from '../state.js';
+import { S, prog } from '../state.js';
 import { LEVELS_PER_WORLD, worldOfLevel, worldInfo, reqWorld, reqLevel, worldFeature } from '../config.js';
 import { totalStars } from '../progress.js';
 import { tr } from '../i18n.js';
 import { startLevel } from '../levels.js';
 
+/** @typedef {import('../types.js').MapButton} MapButton */
+/** @typedef {import('../state.js').Point} Point */
+
+/** @param {'map' | 'game'} v */
 export function showView (v) {
   S.view = v;
   $('mapView').classList.toggle('active', v === 'map');
@@ -22,6 +26,7 @@ const SVGNS = 'http://www.w3.org/2000/svg';
 
 export function renderMap () {
   const vp = $('mapViewport'), canvasEl = $('mapWorld'), svg = $('mapSvg');
+  const p = prog();
   const mapDim = S.mapDim;
   mapDim.vw = vp.clientWidth || window.innerWidth;
   mapDim.vh = vp.clientHeight || (window.innerHeight - 120);
@@ -32,18 +37,18 @@ export function renderMap () {
   S.mapStops = [];
 
   const tot = totalStars();
-  const maxW = worldOfLevel(S.prog.max) + 1;
+  const maxW = worldOfLevel(p.max) + 1;
 
   for (let w = 1; w <= maxW; w++) {
     if (w > 1) {
       const rm = reqWorld(w);
-      S.mapStops.push({ type: 'portal', w, isOpen: tot >= rm, req: rm, tot });
+      S.mapStops.push({ type: 'portal', w, isOpen: tot >= rm, req: rm, tot, x: 0, y: 0 });   // x/y: abajo
     }
     for (let k = 1; k <= LEVELS_PER_WORLD; k++) {
       const n = (w - 1) * LEVELS_PER_WORLD + k;
       const req = reqLevel(n);
-      const unlocked = n <= S.prog.max && tot >= req;
-      S.mapStops.push({ type: 'level', w, k, n, req, unlocked, isCurrent: n === S.prog.max });
+      const unlocked = n <= p.max && tot >= req;
+      S.mapStops.push({ type: 'level', w, k, n, req, unlocked, isCurrent: n === p.max, x: 0, y: 0 });
     }
   }
 
@@ -59,8 +64,8 @@ export function renderMap () {
   canvasEl.style.width = mapDim.w + 'px';
   canvasEl.style.height = mapDim.h + 'px';
 
-  svg.setAttribute('width', mapDim.w);
-  svg.setAttribute('height', mapDim.h);
+  svg.setAttribute('width', String(mapDim.w));
+  svg.setAttribute('height', String(mapDim.h));
   svg.innerHTML = '';
   for (let i = 1; i < S.mapStops.length; i++) {
     const a = S.mapStops[i - 1], b = S.mapStops[i];
@@ -82,7 +87,7 @@ export function renderMap () {
   S.mapStops.forEach(s => {
     const tint = worldInfo(s.w).tint;
     if (s.type === 'portal') {
-      const el = document.createElement('button');
+      const el = /** @type {MapButton} */ (document.createElement('button'));
       el.className = 'portal' + (s.isOpen ? '' : ' locked');
       el.style.setProperty('--tint', tint);
       el.style.left = s.x + 'px'; el.style.top = s.y + 'px';
@@ -95,15 +100,15 @@ export function renderMap () {
       }
       canvasEl.appendChild(el);
     } else {
-      const stars = S.prog.stars[s.n] || 0;
-      const el = document.createElement('button');
+      const stars = p.stars[s.n] || 0;
+      const el = /** @type {MapButton} */ (document.createElement('button'));
       el.className = 'level-node' + (s.unlocked ? '' : ' locked') + (s.isCurrent && s.unlocked ? ' current' : '');
       el.style.setProperty('--tint', tint);
       el.style.left = s.x + 'px'; el.style.top = s.y + 'px';
       if (s.unlocked) {
         el.innerHTML = '<span class="nn">' + s.k + '</span><span class="ne">' + '★'.repeat(stars) + '☆'.repeat(3 - stars) + '</span>';
         el._action = () => startLevel(s.n);
-      } else if (s.n <= S.prog.max) {
+      } else if (s.n <= p.max) {
         el.innerHTML = '<span class="nn">🔒</span><span class="ne">★ ' + tot + '/' + s.req + '</span>';
       } else {
         el.innerHTML = '🔒';
@@ -133,6 +138,10 @@ function applyPan () {
   clampOff();
   $('mapWorld').style.transform = 'translate(' + S.mapOff.x + 'px,' + S.mapOff.y + 'px)';
 }
+/**
+ * @param {Point | null} xy
+ * @param {boolean} smooth
+ */
 function centerOn (xy, smooth) {
   if (!xy) return;
   S.mapOff.x = S.mapDim.vw / 2 - xy.x;
@@ -170,22 +179,24 @@ function initMapPan () {
     try { vp.setPointerCapture(e.pointerId); } catch (err) {}
   });
   vp.addEventListener('pointermove', e => {
-    if (!S.panStart) return;
-    const dx = e.clientX - S.panStart.x, dy = e.clientY - S.panStart.y;
+    const start = S.panStart, base = S.panBase;
+    if (!start) return;
+    if (!base) throw new Error('diamonds: map pan without a base');   // se ponen juntos en pointerdown
+    const dx = e.clientX - start.x, dy = e.clientY - start.y;
     if (Math.abs(dx) + Math.abs(dy) > 7) {
       S.panMoved = true;
       const h = $('mapHint'); if (h) h.style.opacity = '0';
     }
-    S.mapOff.x = S.panBase.x + dx; S.mapOff.y = S.panBase.y + dy;
+    S.mapOff.x = base.x + dx; S.mapOff.y = base.y + dy;
     applyPan();
     updateMapHud();
   });
-  const onEnd = e => {
+  const onEnd = (/** @type {PointerEvent} */ e) => {
     const wasTap = S.panStart && !S.panMoved;
     S.panStart = null; vp.classList.remove('dragging');
     if (wasTap && e && typeof e.clientX === 'number') {
       const t = document.elementFromPoint(e.clientX, e.clientY);
-      const node = t && t.closest && t.closest('.level-node, .portal');
+      const node = /** @type {MapButton | null} */ (t && t.closest && t.closest('.level-node, .portal'));
       if (node && node._action) node._action();
     }
   };

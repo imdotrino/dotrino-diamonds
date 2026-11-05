@@ -2,22 +2,41 @@
 // §4). Modelo de hilos (appendMessage/listThread). Guardamos "documentos" (último
 // estado) por hilo: progreso y set de referidos. Si el store no carga, caemos a un
 // shim sobre localStorage para que el juego ande offline.
+/** @typedef {import('@dotrino/store').ThreadEntry} ThreadEntry */
+/**
+ * Lo mínimo que el juego usa del almacén: el de verdad o uno en memoria.
+ * @typedef {object} Backend
+ * @property {'store' | 'memory'} kind
+ * @property {(t: string, e: ThreadEntry) => Promise<unknown>} appendMessage
+ * @property {(t: string, o?: { limit?: number }) => Promise<ThreadEntry[]>} listThread
+ * @property {(t: string) => Promise<unknown>} removeThread
+ */
+
+/** @type {Promise<Backend> | null} */
 let backendPromise = null;
 
 // SIN REPLIEGUE SILENCIOSO (2026-09-30). Hasta ahora, si el almacén no abría, la partida se
 // guardaba sin avisar en localStorage (`diamonds.shim.<hilo>`) y no llegaba nunca a la bóveda.
 // Ahora: la partida sigue EN MEMORIA y se DICE en pantalla (`onStoreProblem`), y lo que ya se
 // había guardado por ese camino se trae al almacén una vez (`importShim`), sin borrarlo.
+/** @type {unknown} */
 let problem = null;
+/** @type {Set<(e: unknown) => void>} */
 const problemListeners = new Set();
-/** Avisa (y avisa al suscribirse, si ya pasó) de que el almacén no abrió: no se guarda nada. */
+/**
+ * Avisa (y avisa al suscribirse, si ya pasó) de que el almacén no abrió: no se guarda nada.
+ * @param {(e: unknown) => void} fn
+ * @returns {() => boolean} para darse de baja
+ */
 export function onStoreProblem (fn) {
   problemListeners.add(fn);
   if (problem) fn(problem);
   return () => problemListeners.delete(fn);
 }
 
+/** @returns {Backend} */
 function memoryBackend () {
+  /** @type {Map<string, ThreadEntry[]>} */
   const mem = new Map();
   return {
     kind: 'memory',
@@ -29,11 +48,15 @@ function memoryBackend () {
 
 const SHIM_PREFIX = 'diamonds.shim.';
 const SHIM_DONE = 'diamonds.shim.imported';
-/** Trae al almacén, UNA vez, lo que guardó el repliegue viejo; solo los hilos que el almacén no tiene. */
+/**
+ * Trae al almacén, UNA vez, lo que guardó el repliegue viejo; solo los hilos que el almacén no tiene.
+ * @param {import('@dotrino/store').Store} store
+ */
 async function importShim (store) {
   let done = null;
   try { done = localStorage.getItem(SHIM_DONE); } catch { return; }
   if (done) return;
+  /** @type {Record<string, ThreadEntry[]>} */
   const threads = {};
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
@@ -50,6 +73,7 @@ async function importShim (store) {
   localStorage.setItem(SHIM_DONE, String(Date.now()));
 }
 
+/** @returns {Promise<Backend>} */
 async function getBackend () {
   if (backendPromise) return backendPromise;
   backendPromise = (async () => {
@@ -64,10 +88,10 @@ async function getBackend () {
       const store = await mod.Store.connect({ identity, adoptCommon: ['diamonds.'] });
       await importShim(store);
       if (store && typeof store.appendMessage === 'function' && typeof store.listThread === 'function') {
-        return { kind: 'store',
+        return /** @type {Backend} */ ({ kind: 'store',
           appendMessage: (t, e) => store.appendMessage(t, e),
           listThread: (t, o) => store.listThread(t, o),
-          removeThread: t => store.removeThread(t) };
+          removeThread: t => store.removeThread(t) });
       }
       throw new Error('store API mismatch');
     } catch (e) {
@@ -80,9 +104,14 @@ async function getBackend () {
   return backendPromise;
 }
 
+/** @returns {Promise<'store' | 'memory'>} */
 export async function storeKind () { return (await getBackend()).kind; }
 
 // Lee el último "documento" de un hilo (o null).
+/**
+ * @param {string} thread
+ * @returns {Promise<unknown>} lo que se guardó con saveDoc, o null
+ */
 export async function loadDoc (thread) {
   const b = await getBackend();
   try {
@@ -92,6 +121,10 @@ export async function loadDoc (thread) {
   return null;
 }
 // Sobrescribe el documento de un hilo (último estado).
+/**
+ * @param {string} thread
+ * @param {unknown} doc
+ */
 export async function saveDoc (thread, doc) {
   const b = await getBackend();
   try { await b.removeThread(thread); } catch {}

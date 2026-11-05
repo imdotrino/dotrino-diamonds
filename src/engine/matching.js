@@ -1,10 +1,15 @@
 // Detección de combinaciones: matches lineales (>=3), cuadros 2×2, jugadas
 // posibles, y `findGroups` (qué se rompe y qué power-ups se crean). Verbatim.
-import { S, I } from '../state.js';
+import { I, fullGrid } from '../state.js';
 import { N } from '../config.js';
 
+/** @typedef {import('../types.js').Swap} Swap */
+/** @typedef {import('../types.js').Creation} Creation */
+/** @typedef {{ cells: number[], len: number, dir: 'H' | 'V' }} Run */
+
+/** ¿Hay ya una línea de 3+? @returns {boolean} */
 export function hasMatches () {
-  const grid = S.grid;
+  const grid = fullGrid();
   for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
     const g = grid[r][c]; if (!g || g.type < 0) continue; const t = g.type;
     if (c >= 2 && grid[r][c - 1].type === t && grid[r][c - 2].type === t) return true;
@@ -13,8 +18,9 @@ export function hasMatches () {
   return false;
 }
 
+/** ¿Hay ya un cuadro 2×2 del mismo color? @returns {boolean} */
 export function hasSquare () {
-  const grid = S.grid;
+  const grid = fullGrid();
   for (let r = 0; r < N - 1; r++) for (let c = 0; c < N - 1; c++) {
     const g = grid[r][c]; if (!g || g.type < 0) continue; const t = g.type;
     if (grid[r][c + 1].type === t && grid[r + 1][c].type === t && grid[r + 1][c + 1].type === t) return true;
@@ -22,8 +28,10 @@ export function hasSquare () {
   return false;
 }
 
+/** ¿Queda alguna jugada? @returns {boolean} */
 export function hasMoves () {
-  const grid = S.grid;
+  const grid = fullGrid();
+  /** @type {(r1: number, c1: number, r2: number, c2: number) => boolean} */
   const test = (r1, c1, r2, c2) => {
     const a = grid[r1][c1].type, b = grid[r2][c2].type;
     // poderes garantizan jugada
@@ -41,16 +49,23 @@ export function hasMoves () {
 }
 
 // Busca runs >=3 y decide creación de poderes. Devuelve {clear:Set, creations:[{idx,power}]}
+/**
+ * @param {Swap | null} swap
+ * @returns {{ clear: Set<number>, creations: Creation[] }}
+ */
 export function findGroups (swap) {
-  const grid = S.grid;
-  const runsH = [], runsV = [];
+  const grid = fullGrid();
+  /** @type {Run[]} */
+  const runsH = [];
+  /** @type {Run[]} */
+  const runsV = [];
   for (let r = 0; r < N; r++) {
     let s = 0;
     for (let c = 1; c <= N; c++) {
       const same = c < N && grid[r][c] && grid[r][c - 1] && grid[r][c].type === grid[r][c - 1].type && grid[r][c].type >= 0;
       if (same) continue;
       const len = c - s;
-      if (len >= 3) { const cells = []; for (let k = s; k < c; k++) cells.push(I(r, k)); runsH.push({ cells, len, dir: 'H' }); }
+      if (len >= 3) { /** @type {number[]} */ const cells = []; for (let k = s; k < c; k++) cells.push(I(r, k)); runsH.push({ cells, len, dir: 'H' }); }
       s = c;
     }
   }
@@ -60,20 +75,23 @@ export function findGroups (swap) {
       const same = r < N && grid[r][c] && grid[r - 1][c] && grid[r][c].type === grid[r - 1][c].type && grid[r][c].type >= 0;
       if (same) continue;
       const len = r - s;
-      if (len >= 3) { const cells = []; for (let k = s; k < r; k++) cells.push(I(k, c)); runsV.push({ cells, len, dir: 'V' }); }
+      if (len >= 3) { /** @type {number[]} */ const cells = []; for (let k = s; k < r; k++) cells.push(I(k, c)); runsV.push({ cells, len, dir: 'V' }); }
       s = r;
     }
   }
 
+  /** @type {Set<number>} */
   const clear = new Set();
   runsH.forEach(rn => rn.cells.forEach(i => clear.add(i)));
   runsV.forEach(rn => rn.cells.forEach(i => clear.add(i)));
 
+  /** @type {Set<number>} */
   const swapIdx = new Set();
   if (swap) { swapIdx.add(I(swap.a.r, swap.a.c)); swapIdx.add(I(swap.b.r, swap.b.c)); }
-  const pickPivot = cells => { for (const i of cells) if (swapIdx.has(i)) return i; return cells[cells.length >> 1]; };
+  const pickPivot = (/** @type {number[]} */ cells) => { for (const i of cells) if (swapIdx.has(i)) return i; return cells[cells.length >> 1]; };
 
   // Cuadros 2×2 del mismo color que NO estén dentro de un run lineal.
+  /** @type {number[][]} */
   const squares = [];
   for (let r = 0; r < N - 1; r++) for (let c = 0; c < N - 1; c++) {
     const g = grid[r][c]; if (!g || g.type < 0) continue; const t = g.type;
@@ -84,11 +102,17 @@ export function findGroups (swap) {
   }
   if (clear.size === 0 && squares.length === 0) return { clear, creations: [] };
 
-  const inH = new Set(), inV = new Set();
+  /** @type {Set<number>} */
+  const inH = new Set();
+  /** @type {Set<number>} */
+  const inV = new Set();
   runsH.forEach(rn => rn.cells.forEach(i => inH.add(i)));
   runsV.forEach(rn => rn.cells.forEach(i => inV.add(i)));
 
-  const creations = [], used = new Set();
+  /** @type {Creation[]} */
+  const creations = [];
+  /** @type {Set<number>} */
+  const used = new Set();
   // Bombas: intersección de run H y run V (forma L/T/+)
   for (const i of clear) {
     if (inH.has(i) && inV.has(i) && !used.has(i)) { creations.push({ idx: i, power: 'bomb' }); used.add(i); }

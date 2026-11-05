@@ -7,11 +7,17 @@ import { getIdentity } from './identity.js';
 
 const WS_URL = (import.meta.env && import.meta.env.VITE_WS_URL) || 'wss://proxy.dotrino.com';
 
+/** @typedef {import('@dotrino/proxy-client').WebSocketProxyClient} ProxyClient */
+
+/** @type {ProxyClient | null} */
 let client = null;
+/** @type {Promise<ProxyClient> | null} */
 let connecting = null;
 let handlersReady = false;
+/** @type {string | null} */
 let myPublickey = null;
 
+/** El cliente único del proxio (sella todo). @returns {ProxyClient} */
 export function getProxyClient () {
   // `requireSealed` desde el primer instante: el proxio no cifra (CONVENCIONES §4.1), y por
   // aquí salen los acuses de referido, que dicen quién abrió el enlace de quién.
@@ -19,8 +25,10 @@ export function getProxyClient () {
   return client;
 }
 
+/** @returns {string | null} */
 export function getMyPublickey () { return myPublickey; }
 
+/** @param {ProxyClient} c */
 async function identifyWithVault (c) {
   const id = await getIdentity();
   const publickey = id && id.me && id.me.publickey;
@@ -33,13 +41,14 @@ async function identifyWithVault (c) {
       sealing: identitySealing(id, { app: 'diamonds' }),
     });
     // El sobre lo arma el pilar (`identifyAs`), con su destinatario.
-    await c.identifyAs({ publickey, sign: (d) => id.signData(d) });
+    await c.identifyAs({ publickey, sign: (/** @type {any} */ d) => id.signData(d) });
     myPublickey = publickey;
   } catch (e) {
     console.warn('identify (vault) failed:', e);
   }
 }
 
+/** @param {ProxyClient} c */
 function setupHandlers (c) {
   if (handlersReady) return;
   handlersReady = true;
@@ -47,7 +56,10 @@ function setupHandlers (c) {
   c.on('token', () => { identifyWithVault(c).catch(() => {}); });
 }
 
-/** Conecta (una sola vez) y se identifica con el vault. Idempotente. */
+/**
+ * Conecta (una sola vez) y se identifica con el vault. Idempotente.
+ * @returns {Promise<ProxyClient>}
+ */
 export function ensureConnected () {
   const c = getProxyClient();
   if (c.isConnected) return Promise.resolve(c);
@@ -55,7 +67,7 @@ export function ensureConnected () {
   setupHandlers(c);
   connecting = c.connect()
     .then(async () => { await identifyWithVault(c); return c; })
-    .catch((e) => { console.warn('Could not connect to proxy:', e); return c; })
+    .catch((/** @type {unknown} */ e) => { console.warn('Could not connect to proxy:', e); return c; })
     .finally(() => { connecting = null; });
   return connecting;
 }

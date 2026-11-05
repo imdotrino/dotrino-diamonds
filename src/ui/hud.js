@@ -1,20 +1,21 @@
 // HUD del juego (marcador), combo flotante y aplicación del idioma a la UI.
 // Verbatim del juego original.
 import { $ } from '../dom.js';
-import { S } from '../state.js';
+import { S, def as currentDef } from '../state.js';
 import { tr, getLang } from '../i18n.js';
 import { renderMap } from './map.js';
 
 export function updateHUD () {
-  const def = S.def;
+  const def = currentDef();
   $('hudLevel').textContent = def.w + '·' + def.em;
-  $('moves').textContent = Math.max(0, S.moves);
-  $('score').textContent = S.score;
+  $('moves').textContent = String(Math.max(0, S.moves));
+  $('score').textContent = String(S.score);
   const ov = $('objVal');
   if (def.type === 'points') { $('objLbl').textContent = tr('goal'); ov.textContent = S.score + '/' + def.targetPoints; ov.classList.remove('break'); }
   else { $('objLbl').textContent = tr('break'); ov.textContent = Math.max(0, S.targetsLeft) + ' 💎'; ov.classList.add('break'); }
 }
 
+/** @param {number} n */
 export function showCombo (n) {
   const el = $('combo');
   el.textContent = tr('combo')(n);
